@@ -138,7 +138,7 @@
 			"icon"		"mvm/upgradeicons/bottle_kritz"
 			"increment"	"1"				// binary on/off
 			"cap"		"1"				// 
-			"cost"		"250"
+			"cost"		"150"
 			"ui_group"	"2"				// 2 = power up bottle
 		}
 		"9"
@@ -147,7 +147,7 @@
 			"icon"		"mvm/upgradeicons/bottle_ubercharge"
 			"increment"	"1"				// binary on/off
 			"cap"		"1"				// 
-			"cost"		"250"
+			"cost"		"150"
 			"ui_group"	"2"				// 2 = power up bottle
 		}
 		"10"
@@ -236,7 +236,7 @@
 			"icon"		"mvm/upgradeicons/bottle_teleport"
 			"increment"	"1"				// binary on/off
 			"cap"		"1"				// 
-			"cost"		"125"
+			"cost"		"100"
 			"ui_group"	"2"				// 2 = power up bottle
 		}
 		"20"
@@ -269,7 +269,7 @@
 			"icon"		"mvm/upgradeicons/bottle_ammoresupply"
 			"increment"	"1"				// binary on/off
 			"cap"		"1"				// 
-			"cost"		"75"
+			"cost"		"50"
 			"ui_group"	"2"				// 2 = power up bottle
 		}
 		"26"

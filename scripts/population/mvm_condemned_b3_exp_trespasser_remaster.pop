@@ -25,7 +25,7 @@ WaveSchedule
 	FixedRespawnWaveTime 			1
 	CanBotsAttackWhileInSpawnRoom 	Yes
 	CustomNavFile 					mvm_trespasser_remaster.nav
-	CustomUpgradesFile 				mvm_upgrades_trespasser_remaster_2.txt
+	CustomUpgradesFile 				mvm_upgrades_trespasser_remaster_3.txt
 
 	AllowCivilianClass 1
 	AllowBotExtraSlots 1
@@ -1677,7 +1677,7 @@ WaveSchedule
 		// new_upgrade_bleed
 		// {
 		// 	Name "+10% Longer Bleeding"
-		// 	Attribute "mult bleeding Delay"
+		// 	Attribute "mult bleeding delay"
 		// 	Cap 0.5
 		// 	Increment -0.1
 		// 	Cost 250
@@ -1689,7 +1689,7 @@ WaveSchedule
 		new_upgrade_bleed_stronger
 		{
 			Name "+25% Faster Bleeding"
-			Attribute "mult bleeding Delay"
+			Attribute "mult bleeding delay"
 			Cap 0.25
 			Increment -0.25
 			Cost 250
@@ -2748,7 +2748,7 @@ WaveSchedule
 		"provide on active" 1
 		"attack projectiles" 2
 		"damage penalty" 0.75
-		"damage bonus bullet vs sentry Target" 2
+		"damage bonus bullet vs sentry target" 2
 		"silent killer" 1
 		// "maxammo secondary reduced" 0.18
 		"custom kill icon" "pistol"
@@ -3077,8 +3077,8 @@ WaveSchedule
 		"cannot be upgraded" 1
 		//"is_a_sword" 72
 
-		"melee range multiplier" 1.7 //disciplinary Action
-		"melee bounds multiplier" 1.55 //disciplinary Action
+		"melee range multiplier" 1.7 //disciplinary action
+		"melee bounds multiplier" 1.55 //disciplinary action
 		"damage bonus" 1.537
 		"fire rate penalty" 1.5
 		"crit mod disabled" 0
@@ -4783,7 +4783,7 @@ WaveSchedule
 				"spawnflags" "1"
 				//"filtername" "filter_blu"
 				"startdisabled" "0"
-				"Target" "info_tele_window"
+				"target" "info_tele_window"
 			}
 			trigger_push //yeet
 			{
@@ -5044,7 +5044,7 @@ WaveSchedule
 				"origin" "0 488 212"
 				"spawnflags" "1"
 				"filtername" "filter_red"
-				"Target" "desk_failsafe_target"
+				"target" "desk_failsafe_target"
 				"OnStartTouch" "!activatorRunScriptCodeif(self.IsPlayer())self.ViewPunch(QAngle(-5,5,-5))0-1"
 			}
 			info_target
@@ -5419,7 +5419,7 @@ WaveSchedule
 				"maxs" "160 48 96"
 				"spawnflags" "1"
 				"startdisabled" "0"
-				"Target" "info_early"
+				"target" "info_early"
 				"OnStartTouch" "!activator,$PlaySoundToSelf,ambient/halloween/male_scream_14.wav,0,-1"
 				"OnStartTouch" "!activatorRunScriptCodeScreenFade(self, 85, 0, 85, 255, 1, 0, 1)0-1"
 			}
@@ -6971,91 +6971,91 @@ WaveSchedule
 			{
 				"targetname" "helicopter_glow_1"
 				"glowcolor" "0 255 0 222"
-				"Target" "helicopter_static_1"
+				"target" "helicopter_static_1"
 				"startdisabled" "1"
 			}
 			tf_glow
 			{
 				"targetname" "helicopter_glow_2"
 				"glowcolor" "0 255 0 222"
-				"Target" "helicopter_static_2"
+				"target" "helicopter_static_2"
 				"startdisabled" "1"
 			}
 			tf_glow
 			{
 				"targetname" "helicopter_glow_3"
 				"glowcolor" "255 125 0 222"
-				"Target" "helicopter_static_3"
+				"target" "helicopter_static_3"
 				"startdisabled" "1"
 			}
 			tf_glow
 			{
 				"targetname" "helicopter_glow_4"
 				"glowcolor" "255 0 0 222"
-				"Target" "helicopter_dynamic"
+				"target" "helicopter_dynamic"
 				"startdisabled" "1"
 			}
 			//tf_glow //doesn't work??
 			//{
 			//	"targetname" "shopkeeper_glow"
 			//  "glowcolor" "255 0 0 222"
-			//  "Target" "the_engineer"
+			//  "target" "the_engineer"
 			//	"startdisabled" "1"
 			//}
 			//tf_glow
 			//{
 			//	"targetname" "barnacle_glow"
 			//    "glowcolor" "200 200 0 222"
-			//    "Target" "cement_viro_1"
+			//    "target" "cement_viro_1"
 			//	"startdisabled" "1"
 			//}
 			//tf_glow
 			//{
 			//	"targetname" "barnacle_glow"
 			//    "glowcolor" "200 200 0 222"
-			//    "Target" "cement_viro_2"
+			//    "target" "cement_viro_2"
 			//	"startdisabled" "1"
 			//}
 			//tf_glow
 			//{
 			//	"targetname" "barnacle_glow"
 			//    "glowcolor" "200 200 0 222"
-			//    "Target" "zombie_tree_viro_1"
+			//    "target" "zombie_tree_viro_1"
 			//	"startdisabled" "1"
 			//}
 			//tf_glow
 			//{
 			//	"targetname" "barnacle_glow"
 			//    "glowcolor" "200 200 0 222"
-			//    "Target" "zombie_tree_viro_2"
+			//    "target" "zombie_tree_viro_2"
 			//	"startdisabled" "1"
 			//}
 			tf_glow
 			{
 				"targetname" "barnacle_glow"
 				"glowcolor" "200 200 0 222"
-				"Target" "big_viro_1"
+				"target" "big_viro_1"
 				"startdisabled" "1"
 			}
 			tf_glow
 			{
 				"targetname" "barnacle_glow"
 				"glowcolor" "200 200 0 222"
-				"Target" "big_viro_2"
+				"target" "big_viro_2"
 				"startdisabled" "1"
 			}
 			tf_glow
 			{
 				"targetname" "barnacle_glow"
 				"glowcolor" "200 200 0 222"
-				"Target" "big_viro_3"
+				"target" "big_viro_3"
 				"startdisabled" "1"
 			}
 			tf_glow
 			{
 				"targetname" "barnacle_glow"
 				"glowcolor" "200 200 0 222"
-				"Target" "giant_viro"
+				"target" "giant_viro"
 				"startdisabled" "1"
 			}
 			prop_dynamic
