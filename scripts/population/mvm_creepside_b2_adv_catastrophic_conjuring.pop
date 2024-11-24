@@ -2,7 +2,7 @@
 #base robot_standard.pop
 #base robot_giant.pop
 #base robot_stardust_vscript.pop
-#base judge_restricts_v2.pop
+//#base judge_restricts_v2.pop
 //#base overclocks_stardust.pop
 
 WaveSchedule
@@ -593,7 +593,7 @@ WaveSchedule
     //             {
     //                 try IncludeScript(format(`conjuring_scripts/%s`, path), _root) catch(e) printl(e)
     //             }
-    //             IncludeCustom(`mvm_creepside_b2_adv_catastrophic_conjuring_tags.nut`)
+    //             
     //             IncludeCustom(`creepside_adv.nut`)
     //             ClientPrint(null,3,`\x0799CCFMWARNING! The bomb will STOP RESETTING when the wave nears the end!`)
 
@@ -678,7 +678,7 @@ WaveSchedule
                 {
                     try IncludeScript(format(`conjuring_scripts/%s`, path), _root) catch(e) printl(e)
                 }
-                IncludeCustom(`mvm_creepside_b2_adv_catastrophic_conjuring_tags.nut`)
+                
                 IncludeCustom(`creepside_adv.nut`)
                 ClientPrint(null,3,`\x0799CCFMWARNING! The bomb will STOP RESETTING when the wave nears the end!`)
 
@@ -1064,7 +1064,7 @@ WaveSchedule
                 {
                     try IncludeScript(format(`conjuring_scripts/%s`, path), _root) catch(e) printl(e)
                 }
-                IncludeCustom(`mvm_creepside_b2_adv_catastrophic_conjuring_tags.nut`)
+                
                 IncludeCustom(`creepside_adv.nut`)
 
                 MissionAttrs
@@ -1440,7 +1440,7 @@ WaveSchedule
                 {
                     try IncludeScript(format(`conjuring_scripts/%s`, path), _root) catch(e) printl(e)
                 }
-                IncludeCustom(`mvm_creepside_b2_adv_catastrophic_conjuring_tags.nut`)
+                
                 IncludeCustom(`creepside_adv.nut`)
 
                 MissionAttrs
@@ -2049,7 +2049,7 @@ WaveSchedule
                 {
                     try IncludeScript(format(`conjuring_scripts/%s`, path), _root) catch(e) printl(e)
                 }
-                IncludeCustom(`mvm_creepside_b2_adv_catastrophic_conjuring_tags.nut`)
+                
                 IncludeCustom(`merasmus_boss.nut`)
                 IncludeCustom(`creepside_adv.nut`)
 
