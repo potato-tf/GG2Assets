@@ -14,18 +14,12 @@ if(!("breadeventslol" in getroottable())){
     getroottable()[EventsID] <-
     {
         // Cleanup events on round restart. Do not remove this event.
-        OnGameEvent_scorestats_accumulated_update = function(params) {
-            delete getroottable()[EventsID]
-            delete ::Bread
-        }
+
         OnGameEvent_recalculate_holidays = function(_) { if (GetRoundState() == 3) {
             delete getroottable()[EventsID]
             delete ::Bread
         } }
-        OnGameEvent_mvm_wave_complete = function(_) {
-            delete getroottable()[EventsID]
-            delete ::Bread
-        }
+
         // OnGameEvent_teamplay_round_start = function(_) {
         //     //PopExtUtil.PrintTable(PopExtUtil.BotArray)
         //     Cleanup()
