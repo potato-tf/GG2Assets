@@ -8000,7 +8000,7 @@ Bread
                 SpawnTemplate DummyTankCues
                 ClassIcon 	heavy_breadbite_nys_giant
 				Health 999999
-				Name breadtank
+				Name "breadtank"
 				Speed 0
 				StartingPathTrackNode tank_path_1
                 Scale 0.1
