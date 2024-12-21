@@ -7006,8 +7006,8 @@ Real?
 			{
 				"cannot taunt"				1	// prevents weird voiceline shit with the unintended weapons
 				"cannot disguise"			1
-				//"cannot be sapped"			1
-				"addcond immunity"	"15|71"	// should prevent all stunning from sapping but still let you use the timebomb sapper
+				//"addcond immunity"	"15|71"	// should prevent all stunning from sapping but still let you use the timebomb sapper // nvm this fucks up the stun before recall thing
+				"cannot be sapped"			1	// i mean what is timebomb sapping this guy going to do anyways
 				"damage force reduction"	0.01
 				"airblast vulnerability multiplier"	0.01		
 			}
