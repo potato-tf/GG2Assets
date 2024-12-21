@@ -382,13 +382,12 @@ const POWERUP_TIME = 30;
 }
 ::ClearBots <- function() // begone, bot
 {
-	foreach (bot in PopExtUtil.BotArray)
+	local generator = SpawnEntityFromTable("tf_logic_training_mode"
 	{
-        if (PopExtUtil.IsAlive(bot) && !bot.HasBotTag("Cooldude"))
-		{
-            bot.TakeDamage(bot.GetHealth(),DMG_BLAST,bot) // self credits player for kill
-		}
-	}
+		targetname = "bot_wiper"
+	})
+	EntFireByHandle(Entities.FindByName(null, "bot_wiper"),"KickBots","",0,null,null);
+	EntFireByHandle(Entities.FindByName(null, "bot_wiper"),"Kill","",0,null,null);
 }
 
 ::RoundEnd_Think <- function()

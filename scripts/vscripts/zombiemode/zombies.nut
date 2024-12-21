@@ -86,6 +86,7 @@ function Precache()
 //	MissionAttributes.SetConvar("tf_tournament_classlimit_spy",2);
 
 	printl("Zombie Mode loaded.")
+	
 	if (MaxClients().tointeger() < 32) printl("Running below 32 players is not recommended!!")
 	if (MaxClients().tointeger() <= 10)
 	{
