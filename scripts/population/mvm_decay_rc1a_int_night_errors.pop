@@ -155,7 +155,7 @@ WaveSchedule
         T_TFBot_Giant_Pyro_Flare_Rain
 		{
 		    Class Pyro
-			ClassIcon pyro_flare_rain_nys
+			ClassIcon pyro_flare_rain_nys_hyper
 			Name "Giant Flare Rain Pyro"
 			Health 3000
 			Skill Expert
