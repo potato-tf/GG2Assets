@@ -22,7 +22,7 @@ LobotomySchedule
 
 	FixHuntsmanDamageBonus 0 [$SIGSEGV] // Disables rafmod huntsman damage fix for non-potato servers compability
 
-	CustomNavFile "mvm_nightsky_rc4d_prayge" [$SIGSEGV] // seelpit please fix her, nav by Whurr
+	CustomNavFile "mvm_nightsky_rc4d_whurr" [$SIGSEGV] // seelpit please fix her, nav by Whurr
 
 	Templates
 	{
