@@ -684,6 +684,7 @@ NoRomevisionCosmetics 1 //THEY FIXED IT NOW SO I'VE TO REMOVE THE RETARDED UPGRA
 				"patient overheal penalty" -0.69
 				"fire rate penalty" -0.2
 				"move speed bonus"	0.2
+				"speed_boost_on_kill" 1
 				"crit mod disabled" -1
 				"crit mod disabled hidden" -1
 			}
