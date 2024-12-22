@@ -868,7 +868,7 @@ population
 				Class	Scout
 				Name	"Armored Sun Scout"
 				Skill	Expert
-				Health	3000
+				Health	2500
 				WeaponRestrictions	MeleeOnly
 				Attributes	MiniBoss
 				Item		"Sun-on-a-Stick"
@@ -2516,9 +2516,14 @@ population
 			{
 				Class	Pyro
 				Skill	Hard
+				Item	"Upgradeable TF_WEAPON_FLAMETHROWER"
 				Attributes	AlwaysCrit
-				Attributes	AlwaysFireWeapon
 				Tag nav_prefer_flank_left
+				ItemAttributes
+				{
+					Itemname	"Upgradeable TF_WEAPON_FLAMETHROWER"
+					"airblast disabled"	1
+				}
 			}
 		}
 		WaveSpawn
