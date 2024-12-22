@@ -461,7 +461,7 @@ population
 			Skill	Expert
 			Name	"Gargoylian Griller"
 			Health	20000
-			Classicon	pyro_flare_rain_nys
+			Classicon	pyro_flare_rain_nys_hyper
 			Attributes	MiniBoss
 			Attributes	UseBossHealthBar
 			WeaponRestrictions	SecondaryOnly
