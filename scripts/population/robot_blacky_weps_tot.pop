@@ -72,7 +72,7 @@ PrecacheModel "models\weapons\c_models\c_eternal_earner\c_eternal_earner.mdl"
 		"killstreak idleeffect"					2		//	Deadly Daffodil
 		"Blast radius increased"				2
 		"always crit"							1
-		"damage bonus"							6
+		"damage bonus"							9
 		"mult dmg vs giants"					2
 		"no damage falloff"						1
 		"collect currency on kill"				1
