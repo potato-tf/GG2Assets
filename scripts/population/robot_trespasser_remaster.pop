@@ -72,7 +72,6 @@ WaveSchedule
 			{
 				Shop
 				{
-					Item "Slug Rifle"
 					MaxVisionRange -1
 					FireInput 	//remove fort buff
 					{
@@ -93,7 +92,6 @@ WaveSchedule
 				}
 				Defense
 				{
-					Item "Slug Rifle"
 					MaxVisionRange -1
 					FireInput	//remove fort buff
 					{
@@ -117,7 +115,15 @@ WaveSchedule
 				}
 				Fort
 				{
-					Item "Slug Rifle"
+					FireInput
+					{
+						Target !self
+						Action $WeaponSwitchSlot
+						Param 1
+						Delay 0.1
+						Repeats 1
+					}
+
 					NoPushaway 1
 					MaxVisionRange -1
 					CharacterAttributes
@@ -149,7 +155,6 @@ WaveSchedule
 				}
 				Panic
 				{
-					Item "Slug Rifle"
 					MaxVisionRange -1
 					CharacterAttributes
 					{
@@ -177,7 +182,6 @@ WaveSchedule
 				}
 				Happy
 				{
-					Item "Slug Rifle"
 					MaxVisionRange -1
 					FireInput
 					{
@@ -189,7 +193,6 @@ WaveSchedule
 				}
 				Exit
 				{
-					Item "Slug Rifle"
 					MaxVisionRange -1
 					CharacterAttributes
 					{
@@ -209,7 +212,6 @@ WaveSchedule
 				}
 				Wake
 				{
-					Item "Slug Rifle"
 					MaxVisionRange -1
 				}
 			}
@@ -285,7 +287,6 @@ WaveSchedule
 			{
 				Shop
 				{
-					Item "Incendiary Rifle"
 					MaxVisionRange -1
 					FireInput	//remove fort buff
 					{
@@ -306,7 +307,6 @@ WaveSchedule
 				}
 				Defense
 				{
-					Item "Incendiary Rifle"
 					MaxVisionRange -1
 					FireInput	//remove fort buff
 					{
@@ -330,7 +330,6 @@ WaveSchedule
 				}
 				Fort
 				{
-					Item "Incendiary Rifle"
 					NoPushaway 1
 					MaxVisionRange -1
 					CharacterAttributes
@@ -362,7 +361,6 @@ WaveSchedule
 				}
 				Panic
 				{
-					Item "Incendiary Rifle"
 					MaxVisionRange -1
 					CharacterAttributes
 					{
@@ -390,7 +388,6 @@ WaveSchedule
 				}
 				Happy
 				{
-					Item "Incendiary Rifle"
 					MaxVisionRange -1
 					FireInput
 					{
@@ -411,7 +408,6 @@ WaveSchedule
 				}
 				Exit
 				{
-					Item "Incendiary Rifle"
 					MaxVisionRange -1
 					CharacterAttributes
 					{
@@ -431,7 +427,6 @@ WaveSchedule
 				}
 				Wake
 				{
-					Item "Incendiary Rifle"
 					MaxVisionRange -1
 				}
 			}
@@ -508,7 +503,6 @@ WaveSchedule
 			{
 				Shop
 				{
-					Item "Heavy Machine Gun"
 					MaxVisionRange -1
 					FireInput	//remove fort buff
 					{
@@ -529,7 +523,6 @@ WaveSchedule
 				}
 				Defense
 				{
-					Item "Heavy Machine Gun"
 					MaxVisionRange -1
 					FireInput	//remove fort buff
 					{
@@ -553,7 +546,6 @@ WaveSchedule
 				}
 				Fort
 				{
-					Item "Heavy Machine Gun"
 					NoPushaway 1
 					MaxVisionRange -1
 					CharacterAttributes
@@ -585,7 +577,6 @@ WaveSchedule
 				}
 				Panic
 				{
-					Item "Heavy Machine Gun"
 					MaxVisionRange -1
 					CharacterAttributes
 					{
@@ -613,7 +604,6 @@ WaveSchedule
 				}
 				Happy
 				{
-					Item "Heavy Machine Gun"
 					MaxVisionRange -1
 					FireInput
 					{
@@ -625,7 +615,6 @@ WaveSchedule
 				}
 				Exit
 				{
-					Item "Heavy Machine Gun"
 					MaxVisionRange -1
 					CharacterAttributes
 					{
@@ -645,7 +634,6 @@ WaveSchedule
 				}
 				Wake
 				{
-					Item "Heavy Machine Gun"
 					MaxVisionRange -1
 				}
 			}
@@ -712,7 +700,6 @@ WaveSchedule
 				Defense
 				{
 					StripItemSlot 2
-					Item "Dustbowl Eagle"
 					InterruptAction
 					{
 						Target "ai_go_boxes"
@@ -727,7 +714,6 @@ WaveSchedule
 				PlaceSentry
 				{
 					NoCrouchButtonRelease 1
-					Item "Dustbowl Eagle"
 					Item "Upgradeable TF_WEAPON_WRENCH"
 					InterruptAction
 					{
@@ -779,19 +765,31 @@ WaveSchedule
 					{
 						Delay 5.6
 						Repeats 1
-						Duration 11.5
+						Duration 12
 						Type "Primary"
 					}
-					// WeaponSwitch
-					// {
-					// 	Type "Melee"
-					// 	Delay 6
-					// 	Repeats 1
-					// }
+					FireInput
+					{
+						Target ai_look_sentry
+						Action RunScriptCode
+						Param
+						"local vecOrigin = self.GetOrigin()
+						for(local hPlayer; hPlayer = FindByClassnameWithin(hPlayer, `player`, vecOrigin, 192);)
+							if(hPlayer != activator && hPlayer.IsAlive())
+							{
+								local vecDirection = hPlayer.GetOrigin() - vecOrigin
+								vecDirection.z = 0
+								vecDirection.Norm()
+								vecDirection.z = 1
+								hPlayer.ApplyAbsVelocityImpulse(vecDirection * 500)
+							}"
+						Delay 5.6
+						Repeats 1
+					}
 					WeaponSwitch
 					{
 						Type "Secondary"
-						Delay 17.5
+						Delay 18
 						Repeats 1
 					}
 					FireInput
@@ -799,13 +797,12 @@ WaveSchedule
 						Target !self
 						Action $ChangeAttributes
 						Param "Defense"
-						Delay 17.5
+						Delay 18
 						Repeats 1
 					}
 				}
 				Exit
 				{
-					Item "Dustbowl Eagle"
 					CharacterAttributes
 					{
 						"not solid to players" 1
@@ -824,7 +821,6 @@ WaveSchedule
 				}
 				Happy
 				{
-					Item "Dustbowl Eagle"
 					FireInput
 					{
 						Target !self
@@ -4207,7 +4203,7 @@ WaveSchedule
 			ExtAttr IgnoreBuildings
 			WeaponRestrictions MeleeOnly
 			AdditionalStepSound "Skeleton.Step"
-			DropWeapon 1 //drop machinegun
+			// DropWeapon 1 //drop machinegun
 			Item "UPGRADEABLE TF_WEAPON_FISTS"
 			Item "The Head Hedge"
 			Item "Attack Packs"
@@ -4401,7 +4397,7 @@ WaveSchedule
 			ExtAttr IgnoreBuildings
 			WeaponRestrictions MeleeOnly
 			AdditionalStepSound "Skeleton.Step"
-			DropWeapon 1 //drop machinegun
+			// DropWeapon 1 //drop machinegun
 			Item "UPGRADEABLE TF_WEAPON_FISTS"
 			Item "The Head Hedge"
 			Item "Attack Packs"
@@ -4600,7 +4596,7 @@ WaveSchedule
 			ExtAttr IgnoreBuildings
 			WeaponRestrictions MeleeOnly
 			AdditionalStepSound "Skeleton.Step"
-			DropWeapon 1 //drop machinegun
+			// DropWeapon 1 //drop machinegun
 			Item "UPGRADEABLE TF_WEAPON_FISTS"
 			Item "The Head Hedge"
 			Item "Attack Packs"
@@ -4765,10 +4761,10 @@ WaveSchedule
 			ItemAttributes
 			{
 				ItemName "The Bat Outta Hell"
-				"mark for death" 1
+				// "mark for death" 1
 				"custom kill icon" "infection_acid_puddle"
 				"custom hit sound" "trespasser_v2/claw_hit.wav"
-				"fire input on hit" "!self^RunScriptCode^if(self.GetPlayerClass() != TF_CLASS_CIVILIAN && !self.IsBotOfType(TF_BOT_TYPE)) EntFire(`transform_relay`, `Trigger`, null, -1, self)"
+				"fire input on hit" "!self^RunScriptCode^if(!self.IsBotOfType(TF_BOT_TYPE) && !self.InCond(TF_COND_PHASE) && self.GetPlayerClass() != TF_CLASS_CIVILIAN) EntFire(`transform_relay`, `Trigger`, null, -1, self)"
 				"fire input on attack" "!self^$PlaySound^Zombie.Poison_Swing"
 				"fire input on hit name restrict" "player"
 				"is invisible" 1
@@ -5258,7 +5254,7 @@ WaveSchedule
 			Item "Leaper Hat"
 			Item "Leaper Back"
 			Item "The Imp's Imprint"
-			Item "Basic Spellbook"
+			// Item "Basic Spellbook"
 			Item "The Hot Hand"
 			SpawnTemplate item_zombie_slap //double hit
 			ItemAttributes
@@ -5273,12 +5269,12 @@ WaveSchedule
 				"dmg bonus vs buildings" 4
 				"custom kill icon" "infection_scout"
 			}
-			Spell
-			{
-				Delay 20
-				Cooldown 20
-				Type "Teleport"
-			}
+			// Spell // bug : gets through walls
+			// {
+			// 	Delay 20
+			// 	Cooldown 20
+			// 	Type "Teleport"
+			// }
 			FireInput
 			{
 				Target bignet
@@ -5393,7 +5389,7 @@ WaveSchedule
 			Item "Leaper Hat"
 			Item "Leaper Back"
 			Item "The Imp's Imprint"
-			Item "Basic Spellbook"
+			// Item "Basic Spellbook"
 			Item "The Hot Hand"
 			SpawnTemplate item_zombie_slap //double hit
 			ItemAttributes
@@ -5408,12 +5404,12 @@ WaveSchedule
 				"dmg bonus vs buildings" 4
 				"custom kill icon" "infection_scout"
 			}
-			Spell
-			{
-				Delay 20
-				Cooldown 20
-				Type "Teleport"
-			}
+			// Spell // bug : gets through walls
+			// {
+			// 	Delay 20
+			// 	Cooldown 20
+			// 	Type "Teleport"
+			// }
 			FireInput
 			{
 				Target bignet
@@ -5541,6 +5537,7 @@ WaveSchedule
 			Scale 2
 			Skin 1
 			AlwaysGlow 1
+			Tag bot_ignoredecoy
 			Tag blood_death_big
 			Tag blood_death_huge
 			Tag explosive_death
@@ -5605,7 +5602,7 @@ WaveSchedule
 				"provide on active" 1
 				"hand scale" "0.75"
 				"fire input on attack" "!self^$PlaySound^Zombie.Boss.Swing"
-				"fire input on hit" "!caller^bleedplayer^111"
+				// "fire input on hit" "!caller^bleedplayer^111"
 				"fire input on hit name restrict" "player"
 				"disable buildings on hit" 1
 				"stun on hit" 1
@@ -5630,15 +5627,17 @@ WaveSchedule
 			{
 				"allow friendly fire" 1
 				"collect currency on kill" 1
-				"cannot be headshot" 1
-				"backstab shield" 1
+				// "cannot be headshot" 1
+				// "backstab shield" 1
 				"always allow taunt" 1
 				"head scale" 0.75
 				"not solid to players" 1
 				"move speed bonus" 1.5
 				"increased air control" 100
 				"increased jump height" 0.75
-				//"mult stun resistance" 0
+				"wet immunity" 1
+				"addcond immunity" "15"
+				"mult stun resistance" 0
 				"damage force reduction" 0
 				"airblast vulnerability multiplier" 0
 				"airblast vertical vulnerability multiplier" 0
@@ -5655,85 +5654,59 @@ WaveSchedule
 
 		Zombie_Virophage
 		{
-			Class Soldier
+			Class Heavyweapons
 			ClassIcon random_lite
 			Name "Virophage"
 			Scale 2.3
 			FastUpdate 1
 			Skill Expert
 			Health 10000
-			DesiredAttackRange 1
+			DesiredAttackRange 384
 			Action Mobber
 			Tag blood_hit_big
 			Tag blood_death
 			Tag blood_death_big
 			Tag blood_death_huge
-			//Tag bot_leaper //surprise jumps
 			Tag bot_nolastmanspeed
+			Tag bot_receivemeleecrit
+			Tag bot_ignoredecoy
 			NoIdleSound 1
-			AlwaysGlow 0
 			Attributes UseBossHealthBar
 			Attributes MiniBoss
 			Attributes DisableDodge
 			Attributes AlwaysFireWeapon
+			WeaponRestrictions SecondaryOnly
+			StripItemSlot 0
+			StripItemSlot 2
 			ExtAttr IgnoreBots
 			ExtAttr IgnoreBuildings
-			// ExtAttr AlwaysFireWeaponAlt
 			PainSound "Zombie.Break"
 			DeathSound "Virophage.Scream"
-			Item "Basic Spellbook"
 			Item "UPGRADEABLE TF_WEAPON_PIPEBOMBLAUNCHER"
-			// Item "Upgradeable TF_WEAPON_KNIFE"
 			UseMeleeThreatPrioritization 1
-			StripItemSlot 0
-			StripItemSlot 1
-			StripItemSlot 2
 			SpawnTemplate p_viro_base
-			UseCustomModel "models/player/heavy.mdl"
 			NoCrouchButtonRelease 1
-			FireInput
-			{
-				Target !self
-				Action runscriptcode
-				Param "if(Trespasser.bSoloMode) self.AddBotTag(`bot_receivemeleecrit`)"
-				Delay -1
-				Repeats 1
-			}
-			FireInput
-			{
-				Target "!self"
-				Action "$PlaySound"
-				Param "npc/zombie_poison/pz_pain2.wav"
-				Delay 19
-				Cooldown 20
-			}
-			Spell
-			{
-				Delay 20
-				Cooldown 20
-				//IfSeeTarget 1
-				Type "Summon Skeletons"
-			}
 			ItemAttributes
 			{
 				ItemName "UPGRADEABLE TF_WEAPON_PIPEBOMBLAUNCHER"
+				"projectile detonate time" 8
+				"mult projectile count" 3
+				"projectile spread angle penalty" 12
 				"is invisible" 1
-				"mod max primary clip override" -1
 				"stickybomb stick to enemies" 1
 				"fire rate penalty" 10
 				"stickybomb charge rate" -1.3
 				"stun on hit" 4
 				"stun on hit type" "movement"
-				"stun on hit slow" 0.85
+				"stun on hit slow" 0.75
 				"add cond on hit" 101
 				"add cond on hit duration" 4
 				"damage bonus" 0.1
 				"dmg pierces resists absorbs" 1
 				"dmg bonus vs buildings" 9999
 				"blast radius decreased" 0.5
-				"is_passive_weapon" 1
 				"no self blast dmg" 2
-				"clip size upgrade atomic" -7
+				"clip size penalty" 0.125
 				"mult projectile scale" 1.5
 				"crit vs non burning players" 1
 				"crit vs burning players" 1
@@ -5745,38 +5718,16 @@ WaveSchedule
 				"projectile trail particle" "~eb_spit_goop"
 				"fire input on hit" "!self^$PlaySound^Halloween.PlayerScream"
 				"fire input on hit name restrict" "player"
-				// "custom hit sound" "npc/barnacle/barnacle_digesting2.wav"
-				"custom weapon fire sound" "Virophage.Spit"
-				// "custom weapon reload sound" "npc/barnacle/barnacle_digesting1.wav"
+				"custom weapon fire sound" "misc/null.wav"
+				"fire input on attack" "!self^$PlaySound^Virophage.Spit"
+				"custom weapon reload sound" "npc/barnacle/barnacle_digesting1.wav"
 				"custom impact sound" "=80|npc/antlion_grub/squashed.wav"
 				"custom projectile model" "models/weapons/w_bugbait.mdl"
 			}
-			// ItemAttributes
-			// {
-			// 	ItemName "Upgradeable TF_WEAPON_KNIFE"
-			// 	"damage bonus" 101
-			// 	"melee range multiplier" 0.25
-			// 	"melee bounds multiplier" 0.25
-			// 	//"fire rate penalty" 1.5
-			// 	"custom hit sound" "ambient/halloween/male_scream_09.wav"
-			// 	"fire input on hit" "!activator^$PlaySound^Virophage.Eat"
-			// 	"fire input on hit name restrict" "player"
-			// 	"fire input on attack" "!self^RunScriptCode^EntFire(`nom_relay`, `Trigger`, null, -1, self)"
-			// 	"crit vs non burning players" 1
-			// 	"crit vs burning players" 1
-			// 	"custom item model" "models/empty.mdl" //"models/trespasser/burnacle.mdl"
-			// }
 			CharacterAttributes
 			{
-				"mult projectile count" 3
-				"projectile spread angle penalty" 12
-
 				"allow friendly fire" 1
-				"collect currency on kill" 1
-				"addcond immunity" 126	//immune to stumble
-				"projectile detonate time" 8
-				"weapon always gib" 1
-				"always allow taunt" 1
+				// "addcond immunity" 126	//immune to stumble
 				"no_jump" 1
 				"no_duck" 1
 				"no self effect" 1
@@ -5790,39 +5741,27 @@ WaveSchedule
 				"dmg pierces resists absorbs" 1
 				"increased jump height" 0
 				"voice pitch scale" 0
-				"move speed bonus" 1.25
-				"move speed as health decreases" 1.25 //1.5?
+				// "move speed bonus" 0.75
+				// "move speed as health decreases" 1.25 //1.5?
 				// "heal on kill" 1337
 				"stomp player damage" 0.025
 				"stomp building damage" 9999
-				"dmg from melee increased" 2
+				// "dmg from melee increased" 2
 				"dmg taken from fire increased" 2
 				"mult stun resistance" 0
 				"damage force reduction" 0
 				"airblast vulnerability multiplier" 0
 				"airblast vertical vulnerability multiplier" 0
 				"cancel falling damage" 1
-				"mult smack time" 0
 				"cannot be sapped" 1
 				"override footstep sound set" 0
-			}
-			EventChangeAttributes
-			{
-				//Solo
-				//{
-				//CharacterAttributes
-				//    {
-				//        "mult projectile count" 1
-				//		"projectile spread angle penalty" 0
-				//    }
-				//}
 			}
 		}
 
 		Zombie_Virophage_Snail
 		{
 			Class Soldier
-			ClassIcon random_lite
+			Classicon random_lite
 			Name "Virophage"
 			Scale 2.3
 			FastUpdate 1
@@ -5834,42 +5773,38 @@ WaveSchedule
 			Tag blood_death
 			Tag blood_death_big
 			Tag blood_death_huge
-			//Tag bot_leaper //surprise jumps
-			//Tag bot_nolastmanspeed
+			Tag bot_nolastmanspeed
 			NoIdleSound 1
 			AlwaysGlow 0
-			//Attributes UseBossHealthBar
 			Attributes MiniBoss
 			Attributes DisableDodge
 			Attributes AlwaysFireWeapon
 			ExtAttr IgnoreBots
 			ExtAttr IgnoreBuildings
-			//ExtAttr AlwaysFireWeaponAlt
 			PainSound "Zombie.Break"
 			DeathSound "Virophage.Scream"
-			// Item "Upgradeable TF_WEAPON_KNIFE"
+			Item "Upgradeable TF_WEAPON_KNIFE"
 			UseMeleeThreatPrioritization 1
 			StripItemSlot 0
 			StripItemSlot 1
-			StripItemSlot 2
 			SpawnTemplate p_viro_base_blue
 			UseCustomModel "models/player/heavy.mdl"
 			NoCrouchButtonRelease 1
-			// ItemAttributes
-			// {
-			// 	ItemName "Upgradeable TF_WEAPON_KNIFE"
-			// 	"damage bonus" 101
-			// 	"melee range multiplier" 0.25
-			// 	"melee bounds multiplier" 0.25
-			// 	//"fire rate penalty" 1.5
-			// 	"custom hit sound" "ambient/halloween/male_scream_09.wav"
-			// 	"fire input on hit" "!activator^$PlaySound^Virophage.Eat"
-			// 	"fire input on hit name restrict" "player"
-			// 	"fire input on attack" "!self^RunScriptCode^EntFire(`eat_relay`, `Trigger`, null, -1, self)"
-			// 	"crit vs non burning players" 1
-			// 	"crit vs burning players" 1
-			// 	"custom item model" "models/empty.mdl" //"models/trespasser/burnacle.mdl"
-			// }
+			ItemAttributes
+			{
+				ItemName "Upgradeable TF_WEAPON_KNIFE"
+				"damage bonus" 101
+				"melee range multiplier" 0.75
+				"melee bounds multiplier" 0.75
+				//"fire rate penalty" 1.5
+				"custom hit sound" "ambient/halloween/male_scream_09.wav"
+				"fire input on hit" "!activator^$playsound^Virophage.Eat"
+				"fire input on hit name restrict" "player"
+				"fire input on attack" "!self^$PlaySound^Virophage.Excited"
+				"crit vs non burning players" 1
+				"crit vs burning players" 1
+				"custom item model" "models/empty.mdl" //"models/trespasser/burnacle.mdl"
+			}
 			CharacterAttributes
 			{
 				"move speed penalty" 0.35
@@ -5968,6 +5903,7 @@ WaveSchedule
 			Tag metal_death
 			Tag metal_hit
 			Tag bot_nogray //no rtr effect due to too many bugs
+			Tag bot_ignoredecoy
 			Skill Expert
 			Action Mobber
 			ExtAttr IgnoreBots
@@ -6074,6 +6010,7 @@ WaveSchedule
 			Tag metal_death
 			Tag metal_hit
 			Tag bot_nogray //no rtr effect due to too many bugs
+			Tag bot_ignoredecoy
 			Skill Expert
 			Action Medic
 			ExtAttr IgnoreBuildings
@@ -6157,6 +6094,7 @@ WaveSchedule
 			Tag metal_death
 			Tag metal_hit
 			Tag bot_nogray //no rtr effect due to too many bugs
+			Tag bot_ignoredecoy
 			Attributes DisableDodge
 			Attributes IgnoreEnemies
 			Attributes SuppressFire

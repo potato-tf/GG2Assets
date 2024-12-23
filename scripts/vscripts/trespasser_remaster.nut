@@ -1,5 +1,5 @@
-::CONST <- getconsttable()
-::ROOT <- getroottable()
+::CONST       <- getconsttable()
+::ROOT        <- getroottable()
 ::MAX_CLIENTS <- MaxClients().tointeger()
 
 IncludeScript("alternatewaves", getroottable())
@@ -97,12 +97,40 @@ local OTHER_CONSTANTS = {
 	SND_IGNORE_NAME                          = 512
 	SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL = 1024
 
-	DEG2RAD	= 0.0174532924
-	RAD2DEG	= 57.295779513
-	FLT_MIN	= 1.175494e-38
-	FLT_MAX	= 3.402823466e+38
-	INT_MIN	= -2147483648
-	INT_MAX	= 2147483647
+	DEG2RAD = 0.0174532924
+	RAD2DEG = 57.295779513
+	FLT_MIN = 1.175494e-38
+	FLT_MAX = 3.402823466e+38
+	INT_MIN = -2147483648
+	INT_MAX = 2147483647
+
+	DAMAGE_NO          = 0
+	DAMAGE_EVENTS_ONLY = 1
+	DAMAGE_YES         = 2
+	DAMAGE_AIM         = 3
+
+	OBJ_DISPENSER         = 0
+	OBJ_TELEPORTER        = 1
+	OBJ_SENTRYGUN         = 2
+	OBJ_ATTACHMENT_SAPPER = 3
+	OBJ_LAST              = 4
+
+	TF_AMMO_DUMMY     = 0
+	TF_AMMO_PRIMARY   = 1
+	TF_AMMO_SECONDARY = 2
+	TF_AMMO_METAL     = 3
+	TF_AMMO_GRENADES1 = 4
+	TF_AMMO_GRENADES2 = 5
+	TF_AMMO_GRENADES3 = 6
+
+	TFCOLLISION_GROUP_GRENADES                          = 20
+	TFCOLLISION_GROUP_OBJECT                            = 21
+	TFCOLLISION_GROUP_OBJECT_SOLIDTOPLAYERMOVEMENT      = 22
+	TFCOLLISION_GROUP_COMBATOBJECT                      = 23
+	TFCOLLISION_GROUP_ROCKETS                           = 24
+	TFCOLLISION_GROUP_RESPAWNROOMS                      = 25
+	TFCOLLISION_GROUP_PUMPKIN_BOMB                      = 26
+	TFCOLLISION_GROUP_ROCKET_BUT_NOT_WITH_OTHER_ROCKETS = 27
 
 	// damagefilter redefinitions
 	DMG_USE_HITLOCATIONS                    = DMG_AIRBOAT
@@ -218,7 +246,7 @@ switch(TrespasserLosses > 24 ? 24 : TrespasserLosses)
 local hObjectiveResource = FindByClassname(null, "tf_objective_resource")
 local hPlayerManager     = FindByClassname(null, "tf_player_manager")
 local hGameRules         = FindByClassname(null, "tf_gamerules")
-if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.AcceptInput("$SetClientProp$m_iszMvMPopfileName", "(Expert) Trespasser Remaster", null, null)
+if(hObjectiveResource) hObjectiveResource.AcceptInput("$SetClientProp$m_iszMvMPopfileName", "(Expert) Trespasser Remaster", null, null)
 ::Trespasser <- {
 	// Cleanup
 	function OnGameEvent_recalculate_holidays(_)
@@ -226,6 +254,8 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		if(GetRoundState() == 3)
 		{
 			local hObjectiveResource = FindByClassname(null, "tf_objective_resource")
+			local hGameRules = FindByClassname(null, "tf_gamerules")
+
 			if(hObjectiveResource && hObjectiveResource.IsValid())
 			{
 				hObjectiveResource.AcceptInput("$ResetClientProp$m_iszMvMPopfileName", null, null, null)
@@ -235,7 +265,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 					Convars.SetValue("tf_ghost_xy_speed", 300)
 				}
 			}
-
 			if(hGameRules)
 			{
 				SetPropInt(hGameRules, "m_halloweenScenario", 0)
@@ -247,7 +276,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				local hPlayer = PlayerInstanceFromIndex(i)
 				if(!hPlayer) continue
 				CleanupPlayer(hPlayer)
-				if(hPlayer.IsFakeClient()) continue
+				if(hPlayer.IsBotOfType(TF_BOT_TYPE)) continue
 
 				if(hPlayer.GetTeam() == TF_TEAM_BLUE)
 				{
@@ -262,9 +291,12 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 					flags       = SND_STOP
 				})
 			}
+			ClientPrint(null, HUD_PRINTCENTER, "")
 
 			if(hThinkEnt && hThinkEnt.IsValid())
 				hThinkEnt.Kill()
+
+			EntFire("target_alwaystransmit", "Kill")
 
 			delete ::Trespasser
 		}
@@ -310,6 +342,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 					Trespasser.Wins[sNetworkID] <- [r[0], r[1], r[2]]
 				}
 			})
+			// Wins[sNetworkID] <- [10, true, true] // debug
 		}
 	}
 	function SavePlayerWins()
@@ -340,21 +373,15 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 					solo_win=Array[1],
 					all_survivors_alive_win=Array[2]
 				}
-				// callback=function(response, error) {
-
-				// 	foreach (a in Array)
-				// 		printl("write input: " + a)
-
-				// 	foreach (r in response)
-				// 		if (typeof r == "array")
-				// 			foreach (col in r)
-				// 				printl(col)
-				// 		else
-				// 			printl(r)
-				// }
 			})
 		}
 	}
+
+	function IsAliveExtra(hPlayer)
+	{
+		return hPlayer.IsAlive() && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) && hPlayer.GetHealth() > 0
+	}
+
 	bAllSurvivorsAlive = true
 	function OnGameEvent_mvm_mission_complete(_)
 	{
@@ -535,6 +562,19 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		}
 		return true
 	}
+	function UnstuckEntityIgnorePlayers(hEntity, vecBoundingMins = null, vecBoundingMaxs = null)
+	{
+		local NotSolidList = {}
+		for(local i = 0; i <= MAX_CLIENTS; i++)
+		{
+			local hPlayer = PlayerInstanceFromIndex(i)
+			if(hPlayer && hPlayer.IsAlive() && hPlayer.GetSolid() != FSOLID_NOT_SOLID)
+				NotSolidList[hPlayer] <- hPlayer.GetSolid(), hPlayer.SetSolid(FSOLID_NOT_SOLID)
+		}
+		UnstuckEntity(hEntity, vecBoundingMins, vecBoundingMaxs)
+		foreach(hPlayer, iSolid in NotSolidList)
+			hPlayer.SetSolid(iSolid)
+	}
 
 	// If box is within other box
 	function IntersectionBoxBox(xorigin, xmins, xmaxs, yorigin, ymins, ymaxs)
@@ -563,6 +603,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		hPlayer.TerminateScriptScope()
 		if(!hPlayer.IsBotOfType(TF_BOT_TYPE))
 		{
+			SetPropInt(hPlayer, "m_iFOV", 0)
 			hPlayer.SetForceLocalDraw(false)
 			hPlayer.SetScriptOverlayMaterial(null)
 			hPlayer.SetCustomModelWithClassAnimations(null)
@@ -770,11 +811,11 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			local Attributes = {}
 			if(hVictim.HasBotTag("gray_generic"))
 			{
-				Attributes["ammo regen"] <- 1
-				Attributes["crit mod disabled"] <- 0
-				Attributes["use robot voice"] <- 1
+				Attributes["ammo regen"]            <- 1
+				Attributes["crit mod disabled"]     <- 0
+				Attributes["use robot voice"]       <- 1
 				Attributes["additional step sound"] <- "MVM.BotStep"
-				Attributes["set item tint RGB"] <- 8289918
+				Attributes["set item tint RGB"]     <- 8289918
 				Attributes["receive friendly fire"] <- 1
 			}
 			if(hVictim.HasBotTag("gray_robrute"))
@@ -828,6 +869,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		hPlayer.RemoveCond(TF_COND_TAUNTING)
 		hPlayer.Weapon_Switch(hWeapon)
 		hPlayer.AcceptInput("$TauntFromItem", "Taunt: Burstchester", null, null)
+		hPlayer.AddCustomAttribute("dmg taken increased", 0.25, -1)
 		SetPropBool(hPlayer, "m_bForcedSkin", true)
 		SetPropInt(hPlayer, "m_nForcedSkin", hPlayer.GetPlayerClass() == TF_CLASS_SPY ? 23 : 5)
 
@@ -856,6 +898,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			if(!bEffects && hWeapon == self && !hPlayer.InCond(TF_COND_TAUNTING))
 			{
 				bEffects = true
+				hPlayer.RemoveCustomAttribute("dmg taken increased")
 				local hCommand = CreateByClassname("point_clientcommand")
 				hCommand.AcceptInput("Command", "r_screenoverlay effects/stealth_overlay", hPlayer, null)
 				hCommand.Kill()
@@ -881,6 +924,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			SetPropInt(hPlayer, "m_nForcedSkin", 0)
 			SetPropInt(hPlayer, "m_iPlayerSkinOverride", 0)
 			hPlayer.SetForcedTauntCam(0)
+			hPlayer.RemoveCustomAttribute("dmg taken increased")
 		})
 	}
 
@@ -937,8 +981,9 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		SetPropBool(hBook, "m_bForcePurgeFixedupStrings", true)
 		hBook.ValidateScriptScope()
 		local hBook_scope = hBook.GetScriptScope()
-		hBook_scope.hSpellbook <- null
-		hBook_scope.flRechargeTime <- Time() + 12
+		if("Cleanup" in hBook_scope) hBook_scope.Cleanup()
+		hBook_scope.hSpellbook             <- null
+		hBook_scope.flRechargeTime         <- Time() + 12
 		hBook_scope.flRechargeTimeDuration <- 0
 		hBook_scope.Think <- function()
 		{
@@ -980,10 +1025,10 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				}
 				else
 				{
-					local flTimeRemaining = flRechargeTime - flTime
+					local flTimeRemaining        = flRechargeTime - flTime
 					local flTimeRemainingPercent = 1 - flTimeRemaining / flRechargeTimeDuration
-					local flMessagePercent = 1.0 / iMessageMaxLength
-					local iRechargeMeter = (flTimeRemainingPercent / flMessagePercent).tointeger()
+					local flMessagePercent       = 1.0 / iMessageMaxLength
+					local iRechargeMeter         = (flTimeRemainingPercent / flMessagePercent).tointeger()
 
 					for(local i = 1; i <= iRechargeMeter; i++)
 						sMessage += "▰", iMessageMaxLength--
@@ -998,13 +1043,14 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			return -1
 		}
 		AddThinkToEnt(hBook, "Think")
-		Trespasser.SetDestroyCallback(hBook, function()
+		hBook_scope.Cleanup <- function()
 		{
 			if(hGameText && hGameText.IsValid())
 				hGameText.Kill()
 			if(hSpellbook && hSpellbook.IsValid())
 				hSpellbook.Kill()
-		})
+		}
+		Trespasser.SetDestroyCallback(hBook, hBook_scope.Cleanup)
 	}
 
 	function PowderBombs()
@@ -1022,7 +1068,8 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		SetPropBool(hPowder, "m_bForcePurgeFixedupStrings", true)
 		hPowder.ValidateScriptScope()
 		local hPowder_scope = hPowder.GetScriptScope()
-		hPowder_scope.hGameText <- SpawnEntityFromTable("game_text", {
+		if("Cleanup" in hPowder_scope) hPowder_scope.Cleanup()
+		local hGameText = SpawnEntityFromTable("game_text", {
 			channel = 1
 			color = "255 0 0"
 			holdtime = 1
@@ -1058,10 +1105,10 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				}
 				else
 				{
-					local flTimeRemaining = flRechargeTime - flTime
+					local flTimeRemaining        = flRechargeTime - flTime
 					local flTimeRemainingPercent = 1 - flTimeRemaining / flRechargeTimeDuration
-					local flMessagePercent = 1.0 / iMessageMaxLength
-					local iRechargeMeter = (flTimeRemainingPercent / flMessagePercent).tointeger()
+					local flMessagePercent       = 1.0 / iMessageMaxLength
+					local iRechargeMeter         = (flTimeRemainingPercent / flMessagePercent).tointeger()
 
 					for(local i = 1; i <= iRechargeMeter; i++)
 						sMessage += "▰", iMessageMaxLength--
@@ -1076,11 +1123,12 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			return -1
 		}
 		AddThinkToEnt(hPowder, "Think")
-		Trespasser.SetDestroyCallback(hPowder, function()
+		hPowder_scope.Cleanup <- function()
 		{
 			if(hGameText && hGameText.IsValid())
 				hGameText.Destroy()
-		})
+		}
+		Trespasser.SetDestroyCallback(hPowder, hPowder_scope.Cleanup)
 	}
 
 	function DispatchParticleEffectOn(entity, name)
@@ -1134,14 +1182,14 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		local hWeapon              = params.weapon
 		local vecHit               = params.damage_position
 
-		if(hInflictor && hInflictor.GetClassname() == "tf_pumpkin_bomb" && hVictim == hAttacker)
-		{
-			hAttacker.ApplyAbsVelocityImpulse(params.damage_force * 0.03)
-			params.damage *= 0
-		}
-
 		if(hVictim && hInflictor)
 		{
+			if(hInflictor.GetClassname() == "tf_pumpkin_bomb" && hVictim == hAttacker)
+			{
+				hAttacker.ApplyAbsVelocityImpulse(params.damage_force * 0.03)
+				params.damage *= 0
+			}
+
 			// makes planted proxy mines deal 500% damage
 			if
 			(
@@ -1175,9 +1223,16 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			local sAttackerClassname = hAttacker.GetClassname()
 			local iAttackerTeam      = "GetTeam" in hAttacker ? hAttacker.GetTeam() : -1
 
-			// quit breaking viros bugbait
-			// if(iVictimModelIndex == Trespasser.iBugBaitModelIndex && !bSoloMode)
-			// 	params.damage_type = DMG_GENERIC
+			// incendiary rifle
+			if(hVictim.IsPlayer() && params.damage_type & DMG_BUCKSHOT && hWeapon.GetAttribute("add damage type", 0) == DMG_NEVERGIB)
+			{
+				hVictim.AddCondEx(TF_COND_LOST_FOOTING, 0.25, hAttacker)
+				hVictim.StunPlayer(0.5, 1, TF_STUN_MOVEMENT, hAttacker)
+				local vecDirection = hVictim.GetOrigin() - hAttacker.GetOrigin()
+				vecDirection.z = 0
+				vecDirection.Norm()
+				hVictim.ApplyAbsVelocityImpulse(vecDirection * 150)
+			}
 
 			// prevents MiniBosses from trampling over buildings that arent a sentrygun (except minis)
 			if
@@ -1196,7 +1251,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			// Gives gray bots crit damage against blue bots
 			if(iVictimTeam == TF_TEAM_BLUE && iAttackerTeam == TEAM_SPECTATOR)
 				params.damage_type = params.damage_type | DMG_ACID
-
 
 			local bIsMiniCrit =
 				"InCond" in hAttacker &&
@@ -1347,7 +1401,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		bLastMan  = false
 		bSoloMode = false
 		bGameOver = true
-		if(params.team == 3)
+		if(params.team == TF_TEAM_BLUE)
 		{
 			for(local i = 1; i <= MAX_PLAYERS; i++)
 			{
@@ -1507,8 +1561,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		if("hPack" in hRifle_scope && hRifle_scope.hPack && hRifle_scope.hPack.IsValid())
 			hRifle_scope.hPack.Kill()
 
-		hRifle_scope.hParachute <- null
-		hRifle_scope.bDeployed <- false
 		local MakeParachute = function(player)
 		{
 			local parachute = CreateByClassname("tf_weapon_parachute")
@@ -1518,29 +1570,33 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			player.Weapon_Equip(parachute)
 			return parachute
 		}
+		local hTemp = MakeParachute(hPlayer)
+		local hParachute = GetPropEntity(hTemp, "m_hExtraWearable")
+		hTemp.Kill()
+		hParachute.SetModelSimple("models/workshop/weapons/c_models/c_paratooper_pack/c_paratrooper_parachute.mdl")
+		SetPropBool(hParachute, "m_bClientSideAnimation", false)
+		SetPropInt(hParachute, "m_fEffects", EF_BONEMERGE | EF_NODRAW | EF_BONEMERGE_FASTCULL)
+
+		hRifle_scope.bDeployed <- false
 		hRifle_scope.Think <- function()
 		{
 			local bParaCond = hPlayer.InCond(80)
 			if(bParaCond && !bDeployed)
 			{
 				bDeployed = true
-				if(hParachute && hParachute.IsValid())
-					hParachute.Kill()
-				hParachute = MakeParachute(hPlayer)
-				GetPropEntity(hParachute, "m_hExtraWearable").Kill()
+				hParachute.ResetSequence(hParachute.LookupSequence("deploy"))
+				SetPropInt(hParachute, "m_fEffects", EF_BONEMERGE | EF_BONEMERGE_FASTCULL)
 			}
 			else if(!bParaCond && bDeployed)
 			{
 				bDeployed = false
-				if(hParachute && hParachute.IsValid())
-					EntFireByHandle(hParachute, "Kill", null, 0.175, null, null)
+				hParachute.ResetSequence(hParachute.LookupSequence("retract"))
 			}
-			if(hParachute && hParachute.IsValid())
-			{
-				hParachute.RemoveAttribute("allow bunny hop")
-				hParachute.RemoveAttribute("parachute redeploy")
-				hParachute.AddAttribute("increased air control", -4, -1)
-			}
+			if(!bDeployed && hParachute.GetCycle() == 1)
+				SetPropInt(hParachute, "m_fEffects", EF_BONEMERGE | EF_NODRAW | EF_BONEMERGE_FASTCULL)
+			if(bParaCond)
+				hPlayer.AddCustomAttribute("increased air control", -4, 0.1)
+			hParachute.StudioFrameAdvance()
 			return -1
 		}
 		local bGivePack = true
@@ -1563,11 +1619,60 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		AddThinkToEnt(hRifle, "Think")
 	}
 
+	function Eyelander() // eyelander nerf
+	{
+		local hPlayer = self
+		local hEyelander
+		for(local i = 0; i <= 8; i++)
+		{
+			local hWeapon = GetPropEntityArray(hPlayer, "m_hMyWeapons", i)
+			if(hWeapon && hWeapon.GetSlot() == 2)
+				{ hEyelander = hWeapon; break }
+		}
+		if(!hEyelander) return
+
+		hEyelander.ValidateScriptScope()
+		local hEyelander_scope = hEyelander.GetScriptScope()
+		hEyelander_scope.flTimeNext <- 0
+		hEyelander_scope.iHeadsLast <- 0
+		hEyelander_scope.Hit <- function()
+		{
+			SetPropInt(hPlayer, "m_Shared.m_iDecapitations", GetPropInt(hPlayer, "m_Shared.m_iDecapitations") + 1)
+		}
+		hEyelander_scope.Think <- function()
+		{
+			if(!self.IsValid()) return
+			local flTime = Time()
+			local iHeads = GetPropInt(hPlayer, "m_Shared.m_iDecapitations")
+			if(iHeads > 0)
+			{
+				if(iHeads > iHeadsLast)
+					flTimeNext = flTime + 5
+				if(iHeads > 6)
+					SetPropInt(hPlayer, "m_Shared.m_iDecapitations", iHeads = 6)
+				if(iHeadsLast > 0 && flTime >= flTimeNext)
+				{
+					hPlayer.AcceptInput("$PlaySoundToSelf", "physics/flesh/flesh_bloody_impact_hard1.wav", null, null)
+					hPlayer.AcceptInput("$PlaySoundToSelf", "physics/flesh/flesh_bloody_impact_hard1.wav", null, null)
+					DispatchParticleEffect("blood_impact_red_01", hPlayer.EyePosition(), Vector())
+					SetPropInt(hPlayer, "m_Shared.m_iDecapitations", iHeads - 1)
+					hPlayer.AddCustomAttribute("move speed penalty", 1, 0.033)
+					flTimeNext = flTime + 1
+				}
+				if(iHeads > iHeadsLast)
+					EmitSoundOnClient("Cleaver.ImpactFlesh", hPlayer)
+			}
+			iHeadsLast = iHeads
+			return -1
+		}
+		AddThinkToEnt(hEyelander, "Think")
+	}
+
 	// annotations are nice but i will not allow it to make this file look dirty
 	function SendAnnotationOn(hEnt, sText, flDuration, bVisibleToOthers = false, flDelay = -1)
 	{
 		if(flDelay < 0.033) flDelay = 0.033
-		local bPlayer = hEnt.IsPlayer()
+		local bPlayer     = hEnt.IsPlayer()
 		local bRealClient = bPlayer && !hEnt.IsFakeClient()
 		local hAnnotationFollow
 		if(bRealClient)
@@ -1605,6 +1710,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 	// Last Man Standing / Solo Mode
 	bInWave            = false
+	bInBreak           = false
 	bGameOver          = false
 	bLastTwo           = false
 	bLastMan           = false
@@ -1612,30 +1718,43 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	bSoloMode          = false
 	bAboutToBeSoloMode = false
 	hLastRed           = null
-	function AliveCountCheck(bTrigger = true)
+	function AliveCountCheck(bBegin = true)
 	{
-		if(!bInWave || flTimeCountdown > 0 || bSoloMode || bAboutToBeSoloMode) return
-		local iAliveReds = 0
-		local iAliveRedBots = 0
-		local bEngineer = false
+		if(!bInWave || bInBreak) return
+		local iAliveRedsInfected = 0
+		local iAliveReds         = 0
+		local iAliveRedBots      = 0
+		local bEngineer          = false
 		local hRedPlayer
 		for(local i = 1; i <= MAX_CLIENTS; i++)
 		{
 			local hPlayer = PlayerInstanceFromIndex(i)
-			if(hPlayer && hPlayer.GetTeam() == TF_TEAM_RED && hPlayer.IsAlive() && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) && !(hPlayer.IsBotOfType(TF_BOT_TYPE) && hPlayer.HasBotTag("bot_ignoreredcount")))
+			if
+			(
+				hPlayer &&
+				IsAliveExtra(hPlayer) &&
+				(hPlayer.GetTeam() == TF_TEAM_RED || (hPlayer.GetTeam() == TF_TEAM_BLUE && hPlayer.InCond(TF_COND_REPROGRAMMED))) &&
+				!(hPlayer.IsBotOfType(TF_BOT_TYPE) && hPlayer.HasBotTag("bot_ignoreredcount"))
+			)
 			{
-				if(hPlayer.IsBotOfType(TF_BOT_TYPE))
-					iAliveRedBots++
+				if(hPlayer.IsBotOfType(TF_BOT_TYPE)) iAliveRedBots++
 				else
 				{
+					if(!bBegin) ActivePlayers[hPlayer] <- null
+
 					iAliveReds++
+					if(hPlayer.InCond(TF_COND_REPROGRAMMED)) iAliveRedsInfected++
+
 					hRedPlayer = hPlayer
+
 					if(hPlayer.GetPlayerClass() == TF_CLASS_ENGINEER)
 						bEngineer = true
 				}
 			}
 		}
 		// iAliveReds = 6 // debug
+		if(!bGameOver && iAliveRedsInfected == iAliveReds)
+			{ EntFire("bots_win", "RoundWin"); EntFire("player", "$StopSound", "Game.YourTeamWon", -1); return }
 
 		FindByName(null, "ai_go_sentry").SetAbsOrigin(bEngineer ? Vector(-200, 460, 192) : Vector(-482, 610, 192))
 		FindByName(null, "ai_look_sentry").SetAbsOrigin(bEngineer ? Vector(-200, 532, 192) : Vector(-482, 682, 192))
@@ -1659,25 +1778,24 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			SetPropIntArray(hObjectiveResource, iRedIcon[2], MVM_CLASS_FLAG_NONE, iRedIcon[0])
 		}
 
-		if(iAliveReds == 2)
-		{
-			if(bTrigger && !bLastTwo)
-				bLastTwo = true
-		}
+		if(bSoloMode || bAboutToBeSoloMode)
+			return
+
+		if(iAliveReds == 2) bLastTwo = true
 		else bLastTwo = false
 
 		if(iAliveReds == 1)
 		{
 			bLastTwo = false
 			hLastRed = hRedPlayer
-			if(bTrigger && !bLastMan && !bAboutToBeLastMan)
+			if(bBegin && !bLastMan && !bAboutToBeLastMan)
 			{
 				bAboutToBeLastMan = true
 				SendAnnotationOn(hRedPlayer, "YOU ARE THE LAST...", 8, false, 2.75)
 				EntFire("bignet", "RunScriptCode", "Trespasser.bAboutToBeLastMan = false", 2.75)
 				EntFire("lastman_relay", "Trigger", null, -1)
 			}
-			else if(!bTrigger)
+			else if(!bBegin)
 			{
 				bAboutToBeSoloMode = true
 				SendAnnotationOn(hRedPlayer, "YOU ARE ALONE...", 8, false, 3)
@@ -1687,13 +1805,9 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		else
 		{
 			if(iAliveReds == 0 && !bGameOver)
-			{
-				hLastRed = null
 				EntFire("bots_win", "RoundWin")
-				EntFire("transform_relay", "CancelPending")
-			}
 			EntFire("lastman_relay", "CancelPending")
-			if(bTrigger && bLastMan)
+			if(bBegin && bLastMan)
 				EntFire("lastman_relay_disable", "Trigger", null, -1)
 			bLastMan = false
 			bAboutToBeLastMan = false
@@ -1703,7 +1817,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	function OnGameEvent_mvm_begin_wave(params)
 	{
 		if(bInWave) return
-		// Convars.SetValue("tf_mvm_respec_enabled", 0)
 		EntFire("bignet", "RunScriptCode", "Trespasser.SetWavebar(1)", -1)
 		ForceRespawnDeadRed()
 		bInWave = true
@@ -1716,12 +1829,14 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				if(!hWeapon) continue
 				local sClassname = hWeapon.GetClassname()
 				local iItemIndex = GetPropInt(hWeapon, "m_AttributeManager.m_Item.m_iItemDefinitionIndex")
-				if(iItemIndex == 129) // buff banner
+				if(iItemIndex == 129 || iItemIndex == 1001) // buff banner
 					hWeapon.AddAttribute("effect cond override", 34, -1)
 				else if(iItemIndex == 311) // steak
 					hWeapon.AddAttribute("effect cond override", 34 + 41 * 256, -1)
 				else if(iItemIndex == 751) // carbine
-					hWeapon.AddAttribute("effect cond override", 34, -1)
+					hWeapon.AddAttribute("effect cond override", 19 + 34 * 256 + 32 * 65536, -1)
+				else if(iItemIndex == 43) // kgb
+					hWeapon.AddAttribute("critboost on kill", 3, -1), hWeapon.RemoveAttribute("minicritboost on kill")
 				else if(startswith(sClassname, "tf_weapon_jar")) // jarate, milk, gas
 					hWeapon.AddAttribute("applies snare effect", 0.65, -1)
 			}
@@ -1753,7 +1868,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		if(hPlayer && hPlayer.IsValid())
 		{
 			DisconnectedPlayerClass[GetPropString(hPlayer, "m_szNetworkIDString")] <- hPlayer.GetPlayerClass()
-			if(bInWave && hPlayer.IsAlive() && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE))
+			if(bInWave && IsAliveExtra(hPlayer))
 			{
 				ScreenShake(Vector(), 40, 16, 2, 0, 0, true)
 				local sSound = format("misc/halloween/skeletons/skelly_giant_0%i.wav", RandomInt(1, 3))
@@ -1781,126 +1896,171 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	}
 
 	// player spawning
-	GivenWeapon = {}
-	bViroFog = false
+	ActivePlayers = {}
+	GivenWeapon   = {}
+	bViroFog      = false
 	function OnGameEvent_player_spawn(params)
 	{
-		local hPlayer = GetPlayerFromUserID(params.userid)
-		if(hPlayer.GetEFlags() & EFL_NO_MEGAPHYSCANNON_RAGDOLL)
+		local hPlayer  = GetPlayerFromUserID(params.userid)
+		local bBot     = hPlayer.IsBotOfType(TF_BOT_TYPE)
+		local iTeamNum = params.team
+
+		if(!bBot && (bSoloMode || bAboutToBeSoloMode) && hPlayer != hLastRed)
+			{ hPlayer.ForceChangeTeam(TEAM_SPECTATOR, true); return }
+
+		if(hPlayer in BecomingGhost)
 			return
 
 		CleanupPlayer(hPlayer)
 
-		if(hPlayer && params.team == 2)
-			AliveCountCheck()
-
-		local bBot = hPlayer.IsBotOfType(TF_BOT_TYPE)
-		if(!bBot && params.team == 2)
+		if(iTeamNum == TF_TEAM_RED)
 		{
-			if(bViroFog) hPlayer.AcceptInput("SetFogController", "virophage_fog", null, null)
-			DispatchParticleEffect(hPlayer.GetPlayerClass() == TF_CLASS_CIVILIAN ? "merasmus_tp" : "teleportedin_red", hPlayer.GetOrigin(), Vector(1))
-
-			local sNetworkID = GetPropString(hPlayer, "m_szNetworkIDString")
-			if(!(sNetworkID in GivenWeapon))
-				GivenWeapon[sNetworkID] <- 0
-
-			local ITEM_HMG              = 1
-			local ITEM_INCENDIARY_RIFLE = 2
-			local ITEM_SLUG_RIFLE       = 4
-			local ITEM_DUSTBOWL_EAGLE   = 8
-			local ITEM_CHAINSAW         = 16
-			local ITEM_CEREMONIAL_BOW   = 32
-			local ITEM_GRAPPLING_HOOK   = 64
-			local ITEM_DEATHLY_CANTEEN  = 128
-
-			if(sNetworkID in Wins)
+			if(bInWave && !bInBreak && !bBot && !(hPlayer in ActivePlayers))
 			{
-				local iWins = Wins[sNetworkID][0]
-				local bWonSolo = Wins[sNetworkID][1]
-				local bKeptSurvivorsAlive = Wins[sNetworkID][2]
-				local iGivenWeapon = GivenWeapon[sNetworkID]
-				if(iWins >= 1 && !(iGivenWeapon & ITEM_HMG))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_HMG
-					hPlayer.AcceptInput("$AwardExtraItem", "Heavy Machine Gun", null, null)
+				ActivePlayers[hPlayer] <- null
+				local vecOrigin = hPlayer.GetOrigin()
+				local angEyes   = hPlayer.EyeAngles()
+				EntFire("bignet", "RunScriptCode", format("if(activator.IsValid()) { SetPropInt(activator, `m_lifeState`, LIFE_DEAD); Trespasser.BecomeGhost(activator, Vector(%f, %f, %f), QAngle(%f, %f, 0)) }", vecOrigin.x, vecOrigin.y, vecOrigin.z, angEyes.x, angEyes.y), -1, hPlayer)
+				return
+			}
 
-					// very gross method to not automatically equip the awarded weapon after its been given
-					hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
-				}
-				if(iWins >= 2 && !(iGivenWeapon & ITEM_INCENDIARY_RIFLE))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_INCENDIARY_RIFLE
-					hPlayer.AcceptInput("$AwardExtraItem", "Incendiary Rifle", null, null)
+			AliveCountCheck()
+			if(!bBot)
+			{
+				if(bViroFog) hPlayer.AcceptInput("SetFogController", "virophage_fog", null, null)
+				DispatchParticleEffect(hPlayer.GetPlayerClass() == TF_CLASS_CIVILIAN ? "merasmus_tp" : "teleportedin_red", hPlayer.GetOrigin(), Vector(1))
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
-				}
-				if(iWins >= 3 && !(iGivenWeapon & ITEM_SLUG_RIFLE))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_SLUG_RIFLE
-					hPlayer.AcceptInput("$AwardExtraItem", "Slug Rifle", null, null)
+				local sNetworkID = GetPropString(hPlayer, "m_szNetworkIDString")
+				if(!(sNetworkID in GivenWeapon))
+					GivenWeapon[sNetworkID] <- 0
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
-				}
-				if(iWins >= 4 && !(iGivenWeapon & ITEM_DUSTBOWL_EAGLE))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_DUSTBOWL_EAGLE
-					hPlayer.AcceptInput("$AwardExtraItem", "Dustbowl Eagle", null, null)
+				local ITEM_HMG              = 1 << 0
+				local ITEM_INCENDIARY_RIFLE = 1 << 1
+				local ITEM_SLUG_RIFLE       = 1 << 2
+				local ITEM_DUSTBOWL_EAGLE   = 1 << 3
+				local ITEM_CHAINSAW         = 1 << 4
+				local ITEM_CEREMONIAL_BOW   = 1 << 5
+				local ITEM_GRAPPLING_HOOK   = 1 << 6
+				local ITEM_DEATHLY_CANTEEN  = 1 << 7
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
-				}
-				if(iWins >= 5 && !(iGivenWeapon & ITEM_CHAINSAW))
+				if(sNetworkID in Wins)
 				{
-					iGivenWeapon = iGivenWeapon | ITEM_CHAINSAW
-					hPlayer.AcceptInput("$AwardExtraItem", "Chainsaw", null, null)
+					local iWins               = Wins[sNetworkID][0]
+					local bWonSolo            = Wins[sNetworkID][1]
+					local bKeptSurvivorsAlive = Wins[sNetworkID][2]
+					local iGivenWeapon        = GivenWeapon[sNetworkID]
+					if(iWins >= 1 && !(iGivenWeapon & ITEM_HMG))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_HMG
+						hPlayer.AcceptInput("$AwardExtraItem", "Heavy Machine Gun", null, null)
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
-				}
-				if(iWins >= 10 && !(iGivenWeapon & ITEM_CEREMONIAL_BOW))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_CEREMONIAL_BOW
-					hPlayer.AcceptInput("$AwardExtraItem", "Ceremonial Bow", null, null)
+						// very gross method to not automatically equip the awarded weapon after its been given
+						hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
+					}
+					if(iWins >= 2 && !(iGivenWeapon & ITEM_INCENDIARY_RIFLE))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_INCENDIARY_RIFLE
+						hPlayer.AcceptInput("$AwardExtraItem", "Incendiary Rifle", null, null)
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
-				}
-				if(bKeptSurvivorsAlive && !(iGivenWeapon & ITEM_GRAPPLING_HOOK))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_GRAPPLING_HOOK
-					hPlayer.AcceptInput("$AwardExtraItem", "Grappling Hook", null, null)
+						hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
+					}
+					if(iWins >= 3 && !(iGivenWeapon & ITEM_SLUG_RIFLE))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_SLUG_RIFLE
+						hPlayer.AcceptInput("$AwardExtraItem", "Slug Rifle", null, null)
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Battery Canteens", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Battery Canteens", null, null)
-				}
-				if(bWonSolo && !(iGivenWeapon & ITEM_DEATHLY_CANTEEN))
-				{
-					iGivenWeapon = iGivenWeapon | ITEM_DEATHLY_CANTEEN
-					hPlayer.AcceptInput("$AwardExtraItem", "Deathly Canteen", null, null)
+						hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
+					}
+					if(iWins >= 4 && !(iGivenWeapon & ITEM_DUSTBOWL_EAGLE))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_DUSTBOWL_EAGLE
+						hPlayer.AcceptInput("$AwardExtraItem", "Dustbowl Eagle", null, null)
 
-					hPlayer.AcceptInput("$AwardExtraItem", "Battery Canteens", null, null)
-					hPlayer.AcceptInput("$StripExtraItem", "Battery Canteens", null, null)
+						hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_PISTOL", null, null)
+					}
+					if(iWins >= 5 && !(iGivenWeapon & ITEM_CHAINSAW))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_CHAINSAW
+						hPlayer.AcceptInput("$AwardExtraItem", "Chainsaw", null, null)
+
+						hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
+					}
+					if(iWins >= 10 && !(iGivenWeapon & ITEM_CEREMONIAL_BOW))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_CEREMONIAL_BOW
+						hPlayer.AcceptInput("$AwardExtraItem", "Ceremonial Bow", null, null)
+
+						hPlayer.AcceptInput("$AwardExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Upgradeable TF_WEAPON_SCATTERGUN", null, null)
+					}
+					if(bKeptSurvivorsAlive && !(iGivenWeapon & ITEM_GRAPPLING_HOOK))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_GRAPPLING_HOOK
+						hPlayer.AcceptInput("$AwardExtraItem", "Grappling Hook", null, null)
+
+						hPlayer.AcceptInput("$AwardExtraItem", "Battery Canteens", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Battery Canteens", null, null)
+					}
+					if(bWonSolo && !(iGivenWeapon & ITEM_DEATHLY_CANTEEN))
+					{
+						iGivenWeapon = iGivenWeapon | ITEM_DEATHLY_CANTEEN
+						hPlayer.AcceptInput("$AwardExtraItem", "Deathly Canteen", null, null)
+
+						hPlayer.AcceptInput("$AwardExtraItem", "Battery Canteens", null, null)
+						hPlayer.AcceptInput("$StripExtraItem", "Battery Canteens", null, null)
+					}
+					GivenWeapon[sNetworkID] = iGivenWeapon
 				}
-				GivenWeapon[sNetworkID] = iGivenWeapon
 			}
 		}
 
-		if(bBot && bSoloMode)
-			EntFireByHandle(hPlayer, "$ChangeAttributes", "Solo", -1, null, null)
+		if(bBot)
+		{
+			EntFire("bignet", "RunScriptCode", format("Trespasser.PostBotSpawn(GetPlayerFromUserID(%i))", params.userid), -1)
+			if(bSoloMode)
+				EntFireByHandle(hPlayer, "$ChangeAttributes", "Solo", -1, null, null)
+		}
+	}
+	function PostBotSpawn(hBot)
+	{
+		local Tags = {}
+		hBot.GetAllBotTags(Tags)
+		foreach(i, sTag in Tags)
+			if(startswith(sTag, "bot_viro_"))
+			{
+				hBot.AcceptInput("$TeleportToEntity", "viro_base", null, null)
+				if(hBot.GetCustomAttribute("not solid to players", 0) == 0)
+					hBot.AddCustomAttribute("not solid to players", 1, 2)
+				hBot.AddCondEx(TF_COND_SPEED_BOOST, 3, null)
+				local sType = sTag.slice(9).toupper()
+				if(sType in ViroScript.Summons1)
+				{
+					ViroScript.Summons1[sType]--
+					ViroScript.iActiveSummons1++
+				}
+				else
+				{
+					ViroScript.Summons2[sType]--
+					ViroScript.iActiveSummons2++
+				}
+			}
 	}
 
 	// player dying
 	SeenGhostAnno = []
+	BecomingGhost = {}
 	function BecomeGhost(hPlayer, vecOrigin, angEyes)
 	{
-		if(bGameOver || !hPlayer || !hPlayer.IsValid() || hPlayer.IsAlive()) return
+		if(bGameOver || bInBreak || !bInWave || bSoloMode || bAboutToBeSoloMode || !hPlayer || !hPlayer.IsValid() || hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) || IsAliveExtra(hPlayer)) return
 		DispatchParticleEffect("ghost_appearation", vecOrigin, Vector(1))
-		hPlayer.AddEFlags(EFL_NO_MEGAPHYSCANNON_RAGDOLL)
+		BecomingGhost[hPlayer] <- null
 		hPlayer.ForceRespawn()
-		hPlayer.RemoveEFlags(EFL_NO_MEGAPHYSCANNON_RAGDOLL)
+		delete BecomingGhost[hPlayer]
 
 		hPlayer.SetAbsOrigin(vecOrigin)
 		hPlayer.SnapEyeAngles(angEyes)
@@ -1910,11 +2070,10 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		hPlayer.AddCustomAttribute("voice pitch scale", 1.75, -1)
 		hPlayer.AddCustomAttribute("ignored by bots", 1, -1)
 		hPlayer.AddCustomAttribute("mult credit collect range", 0, -1)
+		SetPropIntArray(hPlayer, "m_nModelIndexOverrides", PrecacheModel("models/props_graveyard/healing_ghost.mdl"), 0)
 		EntFireByHandle(hPlayer, "Color", "255 65 25", -1, null, null)
 		EntFireByHandle(hPlayer, "Color", "255 65 25", 0.033, null, null)
 		DispatchParticleEffectOn(hPlayer, "ghost_glow_red")
-		SetPropIntArray(hPlayer, "m_nModelIndexOverrides", PrecacheModel("models/props_graveyard/healing_ghost.mdl"), 0)
-		// SetPropInt(hPlayer, "m_lifeState", LIFE_DEAD) // broken
 
 		local hTouch = SpawnEntityFromTable("dispenser_touch_trigger", {
 			targetname = "ghosttrigger"
@@ -1933,16 +2092,18 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 		hDisp.ValidateScriptScope()
 		local hDisp_scope = hDisp.GetScriptScope()
-		hDisp_scope.LocationInfo <- { origin = Vector(), eyeangles = QAngle() }
-		hDisp_scope.flBooTime <- 0
+		hDisp_scope.flBooTime    <- 0
 		hDisp_scope.iButtonsLast <- 0
-		hDisp_scope.bCamera <- false
+		hDisp_scope.bCamera      <- false
 		local iEntIndex = hPlayer.entindex()
 		hDisp_scope.Think <- function()
 		{
-			local iButtons = GetPropInt(hPlayer, "m_nButtons")
-			local iButtonsChanged = iButtonsLast ^ iButtons
-			local iButtonsPressed = iButtonsChanged & iButtons
+			if(!hPlayer.IsAlive() || hPlayer.GetTeam() != 2)
+				{ self.Kill(); return }
+
+			local iButtons         = GetPropInt(hPlayer, "m_nButtons")
+			local iButtonsChanged  = iButtonsLast ^ iButtons
+			local iButtonsPressed  = iButtonsChanged & iButtons
 			local iButtonsReleased = iButtonsChanged & (~iButtons)
 			iButtonsLast = iButtons
 
@@ -1969,8 +2130,8 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			{
 				bCamera = true
 				local hCameraFix = SpawnEntityFromTable("point_viewcontrol", {})
-				hCameraFix.AcceptInput("Enable", null, hPlayer, hPlayer)
-				hCameraFix.AcceptInput("Disable", null, hPlayer, hPlayer)
+				SetPropEntity(hCameraFix, "m_hPlayer", hPlayer)
+				hCameraFix.AcceptInput("Disable", null, hPlayer, null)
 				hCameraFix.Kill()
 			}
 			else if(!bCameraNow && bCamera)
@@ -1997,27 +2158,64 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	}
 	function OnGameEvent_player_death(params)
 	{
-		local hVictim = GetPlayerFromUserID(params.userid)
-		local bBot    = hVictim.IsBotOfType(TF_BOT_TYPE)
+		local hAttacker = GetPlayerFromUserID(params.attacker)
+		local hVictim   = GetPlayerFromUserID(params.userid)
+		local bBot      = hVictim.IsBotOfType(TF_BOT_TYPE)
 
 		DispatchParticleEffectOn(hVictim, null)
 		hVictim.SetScriptOverlayMaterial(null)
 
+		// eyelander
+		local EyelanderIndexes = {
+			[132]  = null,
+			[266]  = null,
+			[482]  = null,
+			[1082] = null
+		}
+		if(hAttacker && params.weapon_def_index in EyelanderIndexes)
+			EntFire("bignet", "RunScriptCode", "SetPropInt(activator, `m_Shared.m_iDecapitations`, GetPropInt(activator, `m_Shared.m_iDecapitations`) - 1); activator.SetHealth(activator.GetHealth() - 15)", -1, hAttacker)
+
+		// candy cane nerf
+		local hPack = FindByClassnameNearest("item_healthkit_small", hVictim.GetCenter(), 1)
+		if(hPack && hPack.GetAbsVelocity().Length() > 0)
+		{
+			SetPropInt(hPack, "m_nRenderMode", kRenderTransAlpha)
+			hPack.ValidateScriptScope()
+			local hPack_scope = hPack.GetScriptScope()
+			hPack_scope.flTimeNext <- Time() + 3
+			hPack_scope.iState     <- 0
+			hPack_scope.Think <- function()
+			{
+				if(!self.IsValid()) return
+				local flTime = Time()
+				if(flTime >= flTimeNext)
+				{
+					flTimeNext = flTime + 0.15
+					iState++
+					self.AcceptInput("Alpha", iState & 1 ? "25" : "255", null, null)
+					if(iState >= 20) self.Kill()
+				}
+				return -1
+			}
+			AddThinkToEnt(hPack, "Think")
+		}
+
 		if(!bBot)
 		{
-			EmitSoundEx({
-				sound_name  = "npc/stalker/go_alert2.wav"
-				filter_type = RECIPIENT_FILTER_GLOBAL
-			})
-			EmitSoundEx({
-				sound_name  = "npc/stalker/go_alert2.wav"
-				filter_type = RECIPIENT_FILTER_GLOBAL
-				volume      = 0.75
-			})
-			if(!bInWave || flTimeCountdown > 0)
-				EntFire("bignet", "RunScriptCode", "if(activator && !activator.IsAlive() && activator.GetTeam() == TF_TEAM_RED) activator.ForceRespawn()", 3, hVictim)
+			if(!bInWave || bInBreak)
+				EntFire("bignet", "RunScriptCode", "if(activator && activator.IsValid() && !activator.IsAlive() && activator.GetTeam() == TF_TEAM_RED) activator.ForceRespawn()", 3, hVictim)
 			else
 			{
+				AliveCountCheck()
+				EmitSoundEx({
+					sound_name  = "npc/stalker/go_alert2.wav"
+					filter_type = RECIPIENT_FILTER_GLOBAL
+				})
+				EmitSoundEx({
+					sound_name  = "npc/stalker/go_alert2.wav"
+					filter_type = RECIPIENT_FILTER_GLOBAL
+					volume      = 0.75
+				})
 				local vecOrigin = hVictim.GetOrigin()
 				local angEyes = hVictim.EyeAngles()
 				EntFire("bignet", "RunScriptCode", format("Trespasser.BecomeGhost(activator, Vector(%f, %f, %f), QAngle(%f, %f, 0))", vecOrigin.x, vecOrigin.y, vecOrigin.z, angEyes.x, angEyes.y), 6, hVictim)
@@ -2039,7 +2237,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 					effect_name = "bonzo_vomit2_red"
 					start_active = 1
 				})
-				EntFireByHandle(hTempParticle, "Kill", null, 2, null, null)
+				EntFireByHandle(hTempParticle, "Kill", null, 5, null, null)
 				hVictim.EmitSound("vehicles/airboat/pontoon_splash1.wav")
 			}
 			if(hVictim.HasBotTag("blood_death_green"))
@@ -2050,16 +2248,26 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				hVictim.EmitSound("Zombie.Boss.Explode")
 			if(hVictim.HasBotTag("metal_death"))
 				DispatchParticleEffectDelay("bot_death", "activator.GetOrigin()", "Vector(1)")
+			if(hVictim.HasBotTag("emissary_cash"))
+				EntFire("p_custom_money_1", "ForceSpawnAtEntityOrigin", "!activator", -1, hVictim)
+
+			local Tags = {}
+			hVictim.GetAllBotTags(Tags)
+			foreach(i, sTag in Tags)
+				if(startswith(sTag, "bot_viro_"))
+				{
+					local sType = sTag.slice(9).toupper()
+					if(sType in ViroScript.Summons1)
+						ViroScript.iActiveSummons1--
+					else
+						ViroScript.iActiveSummons2--
+				}
 
 			if(hVictim.GetTeam() != TF_TEAM_RED && RandomFloat(0, 1) < 0.01)
 				SpawnCrumpkin(hVictim.GetCenter())
 		}
-		if(hVictim.GetTeam() == TF_TEAM_RED)
-		{
-			EntFire("bignet", "RunScriptCode", "Trespasser.AliveCountCheck()", -1)
-			if(params.userid != params.attacker && RandomFloat(0, 1) < 0.3)
-				SpawnCrumpkin(hVictim.GetCenter())
-		}
+		if(hVictim.GetTeam() == TF_TEAM_RED && params.userid != params.attacker && RandomFloat(0, 1) < 0.3)
+			SpawnCrumpkin(hVictim.GetCenter())
 	}
 
 	// make reds scream once theyve reached under a certain amount of health
@@ -2082,7 +2290,17 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	// sets all monoculus rockets to be the same speed and removes crits
 	function MonoculusScript()
 	{
+		Trespasser.SendAnnotationOn(self, "Melee attacks can reflect eyeball rockets", 7, true, 5)
+		EntFire("@f@filter_red_alive@player", "$AddPlayerAttribute", "melee airblast|1")
+
 		local hMonoculus = self
+		if(Trespasser.bSoloMode)
+			if(hMonoculus)
+			{
+				hMonoculus.SetHealth(5000)
+				hMonoculus.SetMaxHealth(5000)
+			}
+
 		local iEyeRocketModelIndex = PrecacheModel("models/props_halloween/eyeball_projectile.mdl")
 		local flEyeRocketSpeed = 715.0
 		hMonoculus.GetScriptScope().Think <- function()
@@ -2109,7 +2327,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	function SetSpecialCloak()
 	{
 		local hPlayer = self
-		local hItem = hPlayer.GetActiveWeapon()
+		local hItem   = hPlayer.GetActiveWeapon()
 		for(local hChild = hPlayer.FirstMoveChild(); hChild; hChild = hChild.NextMovePeer())
 			if(hChild != hItem && hChild.GetScriptThinkFunc() == "")
 				{ hItem = hChild; break }
@@ -2174,9 +2392,9 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	function OnGameEvent_player_team(params)
 	{
 		local hPlayer = GetPlayerFromUserID(params.userid)
-		if(hPlayer.IsBotOfType(TF_BOT_TYPE)) return
+		if(!hPlayer || hPlayer.IsBotOfType(TF_BOT_TYPE)) return
 
-		if(params.oldteam == 0 && params.team != 1)
+		if(params.team == TF_TEAM_RED)
 		{
 			local sNetworkID = GetPropString(hPlayer, "m_szNetworkIDString")
 
@@ -2185,24 +2403,19 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				iPlayerClass = DisconnectedPlayerClass[sNetworkID]
 
 			if(iPlayerClass != null)
-				SetPropInt(hPlayer, "m_Shared.m_iDesiredPlayerClass", iPlayerClass)
-			else
 			{
-				SetPropInt(hPlayer, "m_Shared.m_iDesiredPlayerClass", RandomInt(1, 9))
-				if(bInWave)
-					EntFire("latejoinclass", "$DisplayMenu", "!activator", 1, hPlayer)
+				SetPropInt(hPlayer, "m_Shared.m_iDesiredPlayerClass", iPlayerClass)
+				EntFire("bignet", "RunScriptCode", "if(activator && activator.IsValid() && !activator.IsAlive()) activator.ForceRespawn()", -1, hPlayer)
 			}
-
-			if(!bInWave) EntFire("bignet", "RunScriptCode", "if(activator && !activator.IsAlive()) activator.ForceRespawn()", 1, hPlayer)
 		}
 
-		if(!bInWave && params.oldteam == 1)
-			EntFire("bignet", "RunScriptCode", "if(activator && !activator.IsAlive()) activator.ForceRespawn()", -1, hPlayer)
+		if(params.team == TEAM_SPECTATOR && hPlayer in ActivePlayers)
+			delete ActivePlayers[hPlayer]
 
-		if(bInWave && params.team == 2 && !hPlayer.IsAlive())
-			EntFire("bignet", "RunScriptCode", "Trespasser.BecomeGhost(activator, Vector(0, 666, 128), QAngle(0, 90, 0))", -1, hPlayer)
+		if(params.oldteam == TEAM_SPECTATOR)
+			EntFire("bignet", "RunScriptCode", "if(activator && activator.IsValid() && !activator.IsAlive()) activator.ForceRespawn()", -1, hPlayer)
 
-		if(params.autoteam == 1 && params.oldteam == 3)
+		if(params.autoteam == 1 && params.oldteam == TF_TEAM_BLUE)
 		{
 			PrecacheSound("vo/eli_lab/eli_handle_b.wav")
 			local SoundTable = {
@@ -2221,122 +2434,100 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 	function Virophage()
 	{
-		local hViro = activator
-		local hBase = self
-		local hHead = FindByName(null, "viro_head")
-		local hParticle = FindByName(null, "virophage_particle")
-		local PlayerList = []
-		vecOriginLast <- Vector()
-		iZeroMovement <- 0
-		iIntersectingPlayer <- 0
-		flTimeUnStuck <- 0
-		flTimeIntersect <- 0
-		flTimeNom <- 0
-		flTimeEatSFX <- 0
-		for(local i = 1; i <= MAX_CLIENTS; i++)
-		{
-			local hPlayer = PlayerInstanceFromIndex(i)
-			if(hPlayer && !hPlayer.IsBotOfType(TF_BOT_TYPE) && hPlayer.GetTeam() == TF_TEAM_RED)
-				PlayerList.append(hPlayer)
+		local hViro      = activator
+		local hBase      = self
+		local hPopulator = FindByClassname(null, "point_populator_interface")
+		Summons1 <- {
+			GENERIC  = 0
+			UNCOMMON = 0
+			HEADLESS = 0
+			SKELETON = 0
+			BURNING  = 0
+			POISON   = 0
 		}
+		flTimeSummon1   <- Time()
+		iActiveSummons1 <- 0
+		iMaxSummons1    <- 10
+
+		Summons2 <- {
+			LEAPER = 0
+			BRUTE  = 0
+			PLAGUE = 0
+		}
+		flTimeSummon2   <- Time() + 30
+		iActiveSummons2 <- 0
+		iMaxSummons2    <- 1
+
+		flTimeSlow <- 0
+		local RNGNormal        = ["GENERIC", "UNCOMMON", "HEADLESS", "SKELETON", "BURNING", "POISON"]
+		local RNGBig           = ["LEAPER", "PLAGUE", "BRUTE"]
+		local iRNGNormalLength = RNGNormal.len()
+		local iRNGBigLength    = RNGBig.len()
+
+		flTimeNom <- 0
+		Trespasser.ViroScript <- this
 		function Think()
 		{
-			local flTime    = Time()
-			local bStuck    = hViro.GetLocomotionInterface().IsStuck()
-			local vecOrigin = hViro.GetOrigin()
-			local vecMins   = hViro.GetPlayerMins()
-			local vecMaxs   = hViro.GetPlayerMaxs()
-
+			local flTime = Time()
 			//////////////// IDLE NOISE ////////////////
 			if(flTime >= flTimeNom)
 			{
 				flTimeNom = flTime + 1
-				ScreenShake(vecOrigin, 16, 32, 3, 64, 0, true)
+				ScreenShake(hViro.GetOrigin(), 16, 32, 3, 64, 0, true)
 				self.AcceptInput("$PlaySound", "Virophage.Excited", null, null)
 			}
 			//////////////// IDLE NOISE ////////////////
 
-			//////////////// ATTACK ////////////////
-			foreach(hPlayer in PlayerList)
-				if
-				(
-					hPlayer && hPlayer.IsValid() && hPlayer.IsAlive() && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) &&
-					Trespasser.IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, hPlayer.GetOrigin(), hPlayer.GetPlayerMins(), hPlayer.GetPlayerMaxs())
-				)
-				{
-					if(iIntersectingPlayer >= 133) // 2 seconds
-					{
-						iIntersectingPlayer = 0
-						EntFire("player", "$PlaySoundToSelf", "ambient/halloween/male_scream_09.wav")
-						hPlayer.TakeDamage(hPlayer.GetHealth() * 2, DMG_CRUSH, hViro)
-					}
-					iIntersectingPlayer++
-					flTimeIntersect = flTime + 1
-					break
-				}
-			if(flTime >= flTimeIntersect)
-				iIntersectingPlayer = 0
-			//////////////// ATTACK ////////////////
+			//////////////// SUMMONING ////////////////
+			local iHealth         = hViro.GetHealth()
+			local flHealthPercent = iHealth / hViro.GetMaxHealth().tofloat()
+			if(flHealthPercent <= 0) flHealthPercent = 0.01
+			local flHealthPercentInverse = 1 - flHealthPercent
 
-			//////////////// RESIZE ////////////////
-			if(bStuck || iIntersectingPlayer > 33)
+			local bCanSummon1 = iActiveSummons1 < iMaxSummons1
+			local bCanSummon2 = iActiveSummons2 < iMaxSummons2
+
+			local sNormal = RNGNormal[floor(flHealthPercentInverse * iRNGNormalLength)]
+			local sBig    = RNGBig[floor(flHealthPercentInverse * iRNGBigLength)]
+
+			if(flTime >= flTimeSummon1)
 			{
-				flTimeUnStuck = flTime + 1
-				hViro.SetModelScale(1.3, 5)
-				if(flTime >= flTimeEatSFX)
+				flTimeSummon1 = flTime + 1
+				if(bCanSummon1)
 				{
-					flTimeEatSFX = flTime + 4
-					EntFire("player", "$PlaySoundToSelf", "Virophage.Eat")
+					Summons1[sNormal]++
 				}
 			}
-			if(flTime >= flTimeUnStuck)
+			if(flTime >= flTimeSummon2)
 			{
-				hViro.SetModelScale(2.3, 1.5)
-				local Trace = {
-					start   = vecOrigin
-					end     = vecOrigin
-					hullmin = vecMins
-					hullmax = vecMaxs
-					mask    = MASK_PLAYERSOLID
-					ignore  = hViro
-				}
-				TraceHull(Trace)
-				if("startsolid" in Trace)
+				flTimeSummon2 = flTime + 30
+				if(bCanSummon2)
 				{
-					for(local i = 2; i <= 32; i += 2)
-					{
-						Trace.start = vecOrigin + Vector(0, 0, 1) * i
-						Trace.end = Trace.start
-						delete Trace.startsolid
-						TraceHull(Trace)
-						if(!("startsolid" in Trace))
-							{ hViro.SetAbsOrigin(Trace.end); break }
-					}
+					hViro.AcceptInput("$PlaySound", "npc/zombie_poison/pz_pain2.wav", null, null)
+					Summons2[sBig]++
 				}
 			}
 
-			local flScale = hViro.GetModelScale() / 2.3
-			// hViro.AddCustomAttribute("move speed bonus", flScale + 0.25, -1)
-			if(hBase && hHead && hParticle && hBase.IsValid() && hHead.IsValid() && hParticle.IsValid())
+			if(flTime >= flTimeSlow)
 			{
-				hBase.SetModelScale(4 * flScale, 0)
-				hBase.SetLocalOrigin(Vector(0, 0, 5) * flScale)
-				hHead.SetModelScale(0.075 * flScale, 0)
-				hHead.SetLocalOrigin(Vector(10, 0, 100) * flScale)
-				hParticle.SetLocalOrigin(Vector(0, 0, 195) * flScale)
+				flTimeSlow = flTime + 0.5
+				AlternateWaves.AddWaveIcons([
+					[ "heavy_zombie_lite",      0, sNormal == "GENERIC" || sNormal == "UNCOMMON" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ],
+					[ "pyro_scout_fireaxe_bat", 0, sNormal == "HEADLESS" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ],
+					[ "dead_multi_lite",        0, sNormal == "SKELETON" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ],
+					[ "dead_flame_lite",        0, sNormal == "BURNING" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ],
+					[ "pyro_membrain_lite",     0, sNormal == "POISON" || sBig == "PLAGUE" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ],
+					[ "spy_facepeel_lite",      0, sBig == "LEAPER" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ],
+					[ "heavy_zombie_arm2_lite", 0, sBig == "BRUTE" ? MVM_CLASS_FLAG_NORMAL | MVM_CLASS_FLAG_SUPPORT : MVM_CLASS_FLAG_NONE ]
+				])
 			}
-			//////////////// RESIZE ////////////////
 
-			//////////////// UNSTUCK ////////////////
-			if((vecOrigin - vecOriginLast).Length() <= 0.5) iZeroMovement++
-			else iZeroMovement = 0
-			vecOriginLast = vecOrigin
-			if(iZeroMovement >= 200) // 3 seconds
-			{
-				iZeroMovement = 0
-				Trespasser.UnstuckEntity(hViro)
-			}
-			//////////////// UNSTUCK ////////////////
+			local Wavespawn = @(bResume, sType) hPopulator.AcceptInput(bResume ? "$ResumeWavespawn" : "$PauseWavespawn", format("VIRO_%s", sType), null, null)
+			foreach(sType, Params in Summons1)
+				Wavespawn(bCanSummon1 && Params > 0, sType)
+			foreach(sType, Params in Summons2)
+				Wavespawn(bCanSummon2 && Params > 0, sType)
+			//////////////// SUMMONING ////////////////
 			return -1
 		}
 		AddThinkToEnt(self, "Think")
@@ -2349,84 +2540,24 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		for(local i = 1; i <= MAX_CLIENTS; i++)
 		{
 			local hPlayer = PlayerInstanceFromIndex(i)
-			if(hPlayer && !hPlayer.IsFakeClient() && (!hPlayer.IsAlive() || hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE)) && hPlayer.GetTeam() == TF_TEAM_RED)
+			if(hPlayer && !hPlayer.IsFakeClient() && !IsAliveExtra(hPlayer) && hPlayer.GetTeam() == TF_TEAM_RED)
 			{
 				hPlayer.ForceRespawn()
-				EntFire("latejoinclass", "$HideMenu", null, -1, hPlayer)
+				ScreenFade(hPlayer, 0, 0, 0, 255, 1, 0, 1)
 			}
 		}
 	}
-	// function ForceRespawnDeadRedAsBots()
-	// {
-	// 	for(local i = 1; i <= MAX_CLIENTS; i++)
-	// 	{
-	// 		local hPlayer = PlayerInstanceFromIndex(i)
-	// 		if(hPlayer && !hPlayer.IsFakeClient() && !hPlayer.IsAlive() && hPlayer.GetTeam() == 2 && hPlayer.GetPlayerClass() != TF_CLASS_CIVILIAN)
-	// 		{
-	// 			hPlayer.AddEFlags(EFL_NO_MEGAPHYSCANNON_RAGDOLL)
-	// 			hPlayer.ForceRespawn()
-	// 			hPlayer.RemoveEFlags(EFL_NO_MEGAPHYSCANNON_RAGDOLL)
-
-	// 			local KillList = []
-	// 			for(local hChild = hPlayer.FirstMoveChild(); hChild; hChild = hChild.NextMovePeer())
-	// 				if(hChild.GetClassname() == "tf_wearable") KillList.append(hChild)
-	// 			foreach(hWearable in KillList)
-	// 				hWearable.Kill()
-
-	// 			hPlayer.SetPlayerClass(TF_CLASS_SOLDIER)
-	// 			hPlayer.SetHealth(200)
-	// 			hPlayer.AddCond(TF_COND_REPROGRAMMED)
-	// 			hPlayer.AddCond(TF_COND_TEAM_GLOWS)
-	// 			hPlayer.SetCustomModelWithClassAnimations("models/bots/soldier/bot_soldier_gibby.mdl")
-	// 			hPlayer.SetScriptOverlayMaterial("effects/combine_binocoverlay")
-
-	// 			hPlayer.AcceptInput("$AddPlayerAttribute", "SET BONUS: special dsp|38", null, null)
-	// 			hPlayer.AcceptInput("$AddPlayerAttribute", "damage penalty|0.5", null, null)
-	// 			hPlayer.AcceptInput("$AddPlayerAttribute", "no_jump|1", null, null)
-	// 			hPlayer.AcceptInput("$AddPlayerAttribute", "move speed bonus|1", null, null)
-	// 			hPlayer.AcceptInput("$WeaponStripSlot", "0", null, null)
-	// 			hPlayer.AcceptInput("$WeaponStripSlot", "1", null, null)
-	// 			hPlayer.AcceptInput("$WeaponSwitchSlot", "2", null, null)
-	// 			hPlayer.AcceptInput("$WeaponStripSlot", "3", null, null)
-	// 			hPlayer.AcceptInput("$WeaponStripSlot", "4", null, null)
-	// 			hPlayer.AcceptInput("$WeaponStripSlot", "5", null, null)
-
-	// 			local hWeapon = hPlayer.GetActiveWeapon()
-	// 			if(hWeapon)
-	// 			{
-	// 				local sWeaponClassname = hWeapon.GetClassname()
-	// 				if
-	// 				(
-	// 					sWeaponClassname == "tf_weapon_robot_arm" ||
-	// 					sWeaponClassname == "tf_weapon_fists" ||
-	// 					sWeaponClassname == "tf_weapon_knife" ||
-	// 					sWeaponClassname == "tf_weapon_sword"
-	// 				)
-	// 				{
-	// 					hPlayer.AcceptInput("$WeaponStripSlot", "2", null, null)
-	// 					hPlayer.AcceptInput("$GiveItem", "Upgradeable TF_WEAPON_SHOVEL", null, null)
-	// 					hPlayer.AcceptInput("$WeaponSwitchSlot", "2", null, null)
-	// 				}
-	// 			}
-
-	// 			hPlayer.AcceptInput("$AddItemAttribute", "custom view model|models/mvm/weapons/c_models/c_soldier_bot_arms.mdl|2", null, null)
-
-	// 			hPlayer.SetAbsOrigin(Vector(-1767, 165, 60))
-	// 			hPlayer.SnapEyeAngles(QAngle())
-	// 		}
-	// 	}
-	// }
 
 	function GetAllPlayersOfType(iTeamNums = null, bAlive = null, bBot = null)
 	{
-		local Players = []
+		local Players       = []
 		local bCheckTeamNum = iTeamNums != null
-		local bCheckAlive = bAlive != null
-		local bCheckBot = bBot != null
+		local bCheckAlive   = bAlive    != null
+		local bCheckBot     = bBot      != null
 		for(local i = 1; i <= MAX_CLIENTS; i++)
 		{
 			local hPlayer = PlayerInstanceFromIndex(i)
-			if(hPlayer && (bCheckTeamNum ? iTeamNums.find(hPlayer.GetTeam()) != null : true) && (bCheckAlive ? (hPlayer.IsAlive() == bAlive && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) == bAlive) : true) && (bCheckBot ? hPlayer.IsBotOfType(TF_BOT_TYPE) == bBot : true))
+			if(hPlayer && (bCheckTeamNum ? iTeamNums.find(hPlayer.GetTeam()) != null : true) && (bCheckAlive ? IsAliveExtra(hPlayer) == bAlive : true) && (bCheckBot ? hPlayer.IsBotOfType(TF_BOT_TYPE) == bBot : true))
 				Players.append(hPlayer)
 		}
 		return Players
@@ -2434,7 +2565,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 	function GetRandomPlayer(iTeamNums = null, bAlive = null, bBot = null)
 	{
-		local Players = GetAllPlayersOfType(iTeamNums, bAlive, bBot)
+		local Players     = GetAllPlayersOfType(iTeamNums, bAlive, bBot)
 		local ArrayLength = Players.len()
 		if(ArrayLength > 0) return Players[RandomInt(0, ArrayLength - 1)]
 		else return null
@@ -2468,24 +2599,16 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		}
 	}
 
-	function ShakeIt()
-	{
-		ScreenShake(Vector(), 16, 40, 1, 0, 0, true)
-		ScreenShake(Vector(), 16, 40, 1, 0, 0, true)
-		ScreenShake(Vector(), 16, 40, 2, 0, 0, true)
-	}
-
 	function SetDoppelganger(hBot, hPlayer)
 	{
 		if(!hPlayer && hBot) { hBot.TakeDamage(hBot.GetHealth() + 10, DMG_ALWAYSGIB, hBot); return }
 		else if(!hBot) return
 		local iPlayerClass = hPlayer.GetPlayerClass()
-		local sClassIcon = GetPropString(hBot, "m_PlayerClass.m_iszClassIcon")
-		local bGiant = hBot.IsMiniBoss()
-		local bHealthBar = GetPropBool(hBot, "m_bUseBossHealthBar")
-
-		local vecOrigin = hBot.GetOrigin()
-		local angRotation = hBot.EyeAngles()
+		local sClassIcon   = GetPropString(hBot, "m_PlayerClass.m_iszClassIcon")
+		local bGiant       = hBot.IsMiniBoss()
+		local bHealthBar   = GetPropBool(hBot, "m_bUseBossHealthBar")
+		local vecOrigin    = hBot.GetOrigin()
+		local angRotation  = hBot.EyeAngles()
 
 		SetPropInt(hBot, "m_Shared.m_iDesiredPlayerClass", iPlayerClass)
 		hBot.SetPlayerClass(iPlayerClass)
@@ -2505,7 +2628,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		hBot.SetUseBossHealthBar(bHealthBar)
 		if(bSoloMode) hBot.SetDifficulty(EASY)
 
-		SetFakeClientConVarValue(hBot, "name", GetPropString(hPlayer, "m_szNetname") + "็")
+		SetFakeClientConVarValue(hBot, "name", format("%s%s", "็", GetPropString(hPlayer, "m_szNetname")))
 		hBot.SetHealth(hBot.GetMaxHealth())
 		hBot.SetCustomModelWithClassAnimations(hPlayer.GetModelName())
 		local hWeapon = hPlayer.GetActiveWeapon()
@@ -2602,7 +2725,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 		local GiveItem = function(hPlayer, sClassname, iItemIndex)
 		{
-			local bWearable = !startswith(sClassname, "tf_weapon")
+			local bWearable      = !startswith(sClassname, "tf_weapon")
 			local iItemIndexReal = iItemIndex
 			local sClassnameReal = sClassname
 			if(bWearable)
@@ -2761,8 +2884,8 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 			if(!Trespasser.bSoloMode)
 			{
-				local iPlayerCond = GetPropInt(hPlayer, "m_Shared.m_nPlayerCond")
-				local iPlayerCondEx = GetPropInt(hPlayer, "m_Shared.m_nPlayerCondEx")
+				local iPlayerCond    = GetPropInt(hPlayer, "m_Shared.m_nPlayerCond")
+				local iPlayerCondEx  = GetPropInt(hPlayer, "m_Shared.m_nPlayerCondEx")
 				local iPlayerCondEx2 = GetPropInt(hPlayer, "m_Shared.m_nPlayerCondEx2")
 				local iPlayerCondEx3 = GetPropInt(hPlayer, "m_Shared.m_nPlayerCondEx3")
 				local iPlayerCondEx4 = GetPropInt(hPlayer, "m_Shared.m_nPlayerCondEx4")
@@ -2926,7 +3049,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				])
 				break
 		}
-		AlternateWaves.CurrentWaveIcons = null
 		EntFire("bignet", "RunScriptCode", "Trespasser.AliveCountCheck()", 0.033)
 	}
 
@@ -2941,11 +3063,11 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 		hWearable.ValidateScriptScope()
 		local hWearable_scope = hWearable.GetScriptScope()
-		hWearable_scope.bTaunting <- false
-		hWearable_scope.hIndicator <- null
-		hWearable_scope.hPlatform <- null
+		hWearable_scope.bTaunting     <- false
+		hWearable_scope.hIndicator    <- null
+		hWearable_scope.hPlatform     <- null
 		hWearable_scope.hPlatformFake <- null
-		hWearable_scope.Cleanup <- function()
+		hWearable_scope.Cleanup       <- function()
 		{
 			if(hIndicator && hIndicator.IsValid())
 				hIndicator.Kill()
@@ -3093,11 +3215,12 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 							SetPropInt(hBuilding, "m_iHighestUpgradeLevel", 3)
 							hBuilding.ValidateScriptScope()
 							local hBuilding_scope = hBuilding.GetScriptScope()
-							hBuilding_scope.iHealth <- hBuilding.GetHealth()
-							hBuilding_scope.iMaxHealth <- hBuilding.GetMaxHealth()
+							hBuilding_scope.iHealth      <- hBuilding.GetHealth()
+							hBuilding_scope.iMaxHealth   <- hBuilding.GetMaxHealth()
 							hBuilding_scope.bPlacingLast <- GetPropBool(hBuilding, "m_bPlacing")
 							hBuilding_scope.Think <- function()
 							{
+								if(!self.IsValid()) return
 								local bPlacing = GetPropBool(self, "m_bPlacing")
 								if(bPlacingLast && !bPlacing)
 									self.SetMaxHealth(iMaxHealth), self.SetHealth(iHealth)
@@ -3154,12 +3277,13 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		SetPropBool(hGrapple, "m_bForcePurgeFixedupStrings", true)
 		hGrapple.ValidateScriptScope()
 		local hGrapple_scope = hGrapple.GetScriptScope()
-		hGrapple_scope.hWeaponLast <- null
-		hGrapple_scope.hWeaponLastFrame <- null
-		hGrapple_scope.hProjectileLast <- null
-		hGrapple_scope.flRechargeTime <- 0
+		if("Cleanup" in hGrapple_scope) hGrapple_scope.Cleanup()
+		hGrapple_scope.hWeaponLast            <- null
+		hGrapple_scope.hWeaponLastFrame       <- null
+		hGrapple_scope.hProjectileLast        <- null
+		hGrapple_scope.flRechargeTime         <- 0
 		hGrapple_scope.flRechargeTimeDuration <- 0
-		hGrapple_scope.bActionSlotLast <- false
+		hGrapple_scope.bActionSlotLast        <- false
 		hGrapple_scope.Think <- function()
 		{
 			local hWeapon = hPlayer.GetActiveWeapon()
@@ -3190,7 +3314,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				flRechargeTimeDuration = flRechargeTime - flTime
 				hGameText.KeyValueFromString("color", "255 0 0")
 
-				SetPropFloat(self, "m_flNextPrimaryAttack", FLT_MAX)
 				EmitSoundOnClient("Weapon_Sapper.Removed", hPlayer)
 				hPlayer.Weapon_Switch(hWeaponLast)
 			}
@@ -3207,18 +3330,16 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 					hGameText.KeyValueFromString("color", "0 255 0")
 					hPlayer.AcceptInput("$PlaySoundToSelf", "TFPlayer.ReCharged", null, null)
 
-					SetPropFloat(self, "m_flNextPrimaryAttack", 0)
-
 					for(local i = 1; i <= iMessageMaxLength; i++)
 						sMessage += "▰"
 					sMessage += " READY"
 				}
 				else
 				{
-					local flTimeRemaining = flRechargeTime - flTime
+					local flTimeRemaining        = flRechargeTime - flTime
 					local flTimeRemainingPercent = 1 - flTimeRemaining / flRechargeTimeDuration
-					local flMessagePercent = 1.0 / iMessageMaxLength
-					local iRechargeMeter = (flTimeRemainingPercent / flMessagePercent).tointeger()
+					local flMessagePercent       = 1.0 / iMessageMaxLength
+					local iRechargeMeter         = (flTimeRemainingPercent / flMessagePercent).tointeger()
 
 					for(local i = 1; i <= iRechargeMeter; i++)
 						sMessage += "▰", iMessageMaxLength--
@@ -3233,11 +3354,12 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			return -1
 		}
 		AddThinkToEnt(hGrapple, "Think")
-		Trespasser.SetDestroyCallback(hGrapple, function()
+		hGrapple_scope.Cleanup <- function()
 		{
 			if(hGameText && hGameText.IsValid())
 				hGameText.Kill()
-		})
+		}
+		Trespasser.SetDestroyCallback(hGrapple, hGrapple_scope.Cleanup)
 	}
 
 	function SpellbookHud()
@@ -3254,10 +3376,10 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 		hSpellbook.ValidateScriptScope()
 		local hSpellbook_scope = hSpellbook.GetScriptScope()
-		hSpellbook_scope.bTickSound <- true
+		hSpellbook_scope.bTickSound      <- true
 		hSpellbook_scope.iSpellIndexLast <- -1
 		hSpellbook_scope.flNextTickSound <- -1
-		hSpellbook_scope.flTickGap <- 0.01
+		hSpellbook_scope.flTickGap       <- 0.01
 		hSpellbook_scope.Think <- function()
 		{
 			local flTime = Time()
@@ -3344,16 +3466,16 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		local hMonoculus = FindByClassname(null, "eyeball_boss")
 		if(hMonoculus)
 		{
+			hMonoculus.SetSolid(FSOLID_NOT_SOLID)
+			EntFireByHandle(hMonoculus, "RunScriptCode", "self.SetSolid(SOLID_BBOX)", 1, null, null)
 			BossGlow(hMonoculus)
-			for(local hPlayer; hPlayer = FindByClassnameWithin(hPlayer, "player", hMonoculus.GetCenter(), 512);)
-				if(!UnstuckEntity(hPlayer))
-					hPlayer.SetAbsOrigin(Vector(0, 920, 128))
 		}
 	}
 
 	function OnGameEvent_eyeball_boss_killed(_)
 	{
-		EntFire("teleport_vortex","Kill") // no bombinomicon book teleport
+		EntFire("@f@filter_red_alive@player", "$RemovePlayerAttribute", "melee airblast")
+		EntFire("teleport_vortex", "Kill") // no bombinomicon book teleport
 	}
 
 	function BossGlow(hBoss)
@@ -3379,7 +3501,13 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			if(hWeapon && hWeapon.GetSlot() == 0)
 				{ hPrimary = hWeapon; break }
 		}
-		if(!hPrimary) hPlayer.AcceptInput("$GiveItem", "deflector", null, null)
+		if(!hPrimary)
+		{
+			local vecOrigin = hPlayer.GetOrigin()
+			hPlayer.SetAbsOrigin(Vector(0, 0, 9999)) // so standing in a dispenser doesnt prevent having a dummy primary
+			hPlayer.AcceptInput("$GiveItem", "deflector", null, null)
+			hPlayer.SetAbsOrigin(vecOrigin)
+		}
 	}
 
 	function SummonCoffin(hTarget, hPlayer)
@@ -3397,7 +3525,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 		local vecOrigin   = hPlayer.GetOrigin()
 		local angRotation = hPlayer.GetAbsAngles()
-		local hDeathProp = SpawnEntityFromTable("prop_dynamic", {
+		local hDeathProp  = SpawnEntityFromTable("prop_dynamic", {
 			origin           = vecOrigin + angRotation.Forward() * 20
 			angles           = angRotation + QAngle(-15, 0, 0)
 			model            = "models/player/soldier.mdl"
@@ -3437,17 +3565,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		EntFireByHandle(hCoffin, "SetAnimation", "taunt_the_crypt_creeper_outro", 7.9, null, null)
 		EntFireByHandle(hCoffin, "Kill", null, 9.75, null, null)
 
-		// kind of gross use of solidity but its so that players dont cause the coffin to go through a wall
-		local NotSolidList = {}
-		for(local i = 0; i <= MAX_CLIENTS; i++)
-		{
-			local hPlayer = PlayerInstanceFromIndex(i)
-			if(hPlayer && hPlayer.IsAlive() && hPlayer.GetSolid() != FSOLID_NOT_SOLID)
-				NotSolidList[hPlayer] <- hPlayer.GetSolid(), hPlayer.SetSolid(FSOLID_NOT_SOLID)
-		}
-		UnstuckEntity(hCoffin, Vector(-55, -55, 0), Vector(55, 55, 24))
-		foreach(hPlayer, iSolid in NotSolidList)
-			hPlayer.SetSolid(iSolid)
+		UnstuckEntityIgnorePlayers(hCoffin, Vector(-55, -55, 0), Vector(55, 55, 24))
 
 		// sounds
 		EntFireByHandle(hCoffin, "$PlaySound", "Wood_Furniture.Break", -1, null, null)
@@ -3514,7 +3632,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				local hPlayer = PlayerInstanceFromIndex(i)
 				if(!hPlayer) continue
 
-				if(hPlayer.GetTeam() == TF_TEAM_RED && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) && Trespasser.IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, hPlayer.GetOrigin(), hPlayer.GetPlayerMins(), hPlayer.GetPlayerMaxs()))
+				if(Trespasser.IsAliveExtra(hPlayer) && hPlayer.GetTeam() == TF_TEAM_RED && Trespasser.IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, hPlayer.GetOrigin(), hPlayer.GetPlayerMins(), hPlayer.GetPlayerMaxs()))
 				{
 					local hSpellbook
 					for(local hEnt = hPlayer.FirstMoveChild(); hEnt; hEnt = hEnt.NextMovePeer())
@@ -3561,7 +3679,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				local hPlayer = PlayerInstanceFromIndex(i)
 				if(!hPlayer) continue
 
-				if(hPlayer.GetTeam() == TF_TEAM_RED && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE) && Trespasser.IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, hPlayer.GetOrigin(), hPlayer.GetPlayerMins(), hPlayer.GetPlayerMaxs()))
+				if(Trespasser.IsAliveExtra(hPlayer) && hPlayer.GetTeam() == TF_TEAM_RED && hPlayer.GetTeam() == TF_TEAM_RED && Trespasser.IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, hPlayer.GetOrigin(), hPlayer.GetPlayerMins(), hPlayer.GetPlayerMaxs()))
 				{
 					hPlayer.AddCondEx(TF_COND_CRITBOOSTED_PUMPKIN, 3, null)
 					hPickup.EmitSound("Halloween.PumpkinPickup")
@@ -3577,16 +3695,17 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 
 	function SetAlwaysTransmit(hEnt)
 	{
-		local hEdict = SpawnEntityFromTable("info_target", {})
+		local hEdict = SpawnEntityFromTable("info_target", {targetname = "target_alwaystransmit"})
 		hEdict.AddEFlags(EFL_IN_SKYBOX | EFL_FORCE_CHECK_TRANSMIT)
 		hEdict.AcceptInput("SetParent", "!activator", hEnt, null)
 		hEdict.SetLocalOrigin(Vector())
 		return hEdict
 	}
 
-	function SetDesiredClass(hPlayer, iPlayerClass)
+	function GetPlayerClassLimits()
 	{
-		local PlayerClass = {
+		local PlayerClassLimits = {
+			[TF_CLASS_UNDEFINED]    = [0, "Undefined"],
 			[TF_CLASS_SCOUT]        = [2, "Scout"],
 			[TF_CLASS_SOLDIER]      = [2, "Soldier"],
 			[TF_CLASS_PYRO]         = [2, "Pyro"],
@@ -3600,20 +3719,25 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 		}
 		for(local i = 1; i <= MAX_CLIENTS; i++)
 		{
-			local hPlayer2 = PlayerInstanceFromIndex(i)
-			if(!hPlayer2 || hPlayer2 == hPlayer || hPlayer2.IsBotOfType(TF_BOT_TYPE)) continue
-			PlayerClass[hPlayer2.GetPlayerClass()][0]--
+			local hPlayer = PlayerInstanceFromIndex(i)
+			if(hPlayer && !hPlayer.IsBotOfType(TF_BOT_TYPE))
+				PlayerClassLimits[hPlayer.GetPlayerClass()][0]--
 		}
+		return PlayerClassLimits
+	}
 
-		if(PlayerClass[iPlayerClass][0] > 0)
+	function SetDesiredClass(hPlayer, iPlayerClass)
+	{
+		local PlayerClassLimits = GetPlayerClassLimits()
+		if(PlayerClassLimits[iPlayerClass][0] > 0)
 		{
 			SetPropInt(hPlayer, "m_Shared.m_iDesiredPlayerClass", iPlayerClass)
-			ClientPrint(hPlayer, HUD_PRINTTALK, format("You will respawn as %s", PlayerClass[iPlayerClass][1]))
+			ClientPrint(hPlayer, HUD_PRINTTALK, format("*You will spawn as %s", PlayerClassLimits[iPlayerClass][1]))
 			EmitSoundOnClient("Vote.Cast.Yes", hPlayer)
 		}
 		else
 		{
-			ClientPrint(hPlayer, HUD_PRINTCENTER, format("Exceeded the %s class limit in this mission", PlayerClass[iPlayerClass][1]))
+			ClientPrint(hPlayer, HUD_PRINTCENTER, format("Exceeded the %s class limit in this mission", PlayerClassLimits[iPlayerClass][1]))
 			EmitSoundOnClient("Vote.Cast.No", hPlayer)
 			caller.AcceptInput("$DisplayMenu", "!activator", hPlayer, null)
 		}
@@ -3623,58 +3747,294 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 	function OnGameEvent_player_changeclass(params)
 	{
 		local hPlayer = GetPlayerFromUserID(params.userid)
-		if(params["class"] == TF_CLASS_CIVILIAN && TrespasserSeenMerasmusWarning.find(hPlayer) == null)
+		if(!hPlayer.IsBotOfType(TF_BOT_TYPE))
 		{
-			TrespasserSeenMerasmusWarning.append(hPlayer)
-			if(!bInWave)
+			if(params["class"] == TF_CLASS_CIVILIAN && TrespasserSeenMerasmusWarning.find(hPlayer) == null)
 			{
-				PrecacheSound("vo/halloween_merasmus/sf14_merasmus_necromasher_08.mp3")
-				EmitSoundEx({
-					sound_name = "vo/halloween_merasmus/sf14_merasmus_necromasher_08.mp3"
-					entity = hPlayer
-					filter_type = RECIPIENT_FILTER_SINGLE_PLAYER
-				})
-				SetPropInt(hPlayer, "m_Shared.m_iDesiredPlayerClass", RandomInt(1, 9))
-				hPlayer.DispatchSpawn()
+				TrespasserSeenMerasmusWarning.append(hPlayer)
+				if(!bInWave)
+				{
+					PrecacheSound("vo/halloween_merasmus/sf14_merasmus_necromasher_08.mp3")
+					EmitSoundEx({
+						sound_name = "vo/halloween_merasmus/sf14_merasmus_necromasher_08.mp3"
+						entity = hPlayer
+						filter_type = RECIPIENT_FILTER_SINGLE_PLAYER
+					})
+					local PlayerClassLimits = GetPlayerClassLimits()
+					local PossibleClasses = []
+					foreach(iClass, Array in PlayerClassLimits)
+						if(Array[0] >= 0)
+							PossibleClasses.append(iClass)
+					SetPropInt(hPlayer, "m_Shared.m_iDesiredPlayerClass", PossibleClasses[RandomInt(0, PossibleClasses.len() - 1)])
+					hPlayer.DispatchSpawn()
+				}
+				local sArg = "ClientPrint(activator, HUD_PRINTCENTER, `READ TO AVOID CRASHES BEFORE PLAYING AS MERASMUS\\n\\nUse cl_hud_playerclass_use_playermodel 0 (Player Model in Player Class HUD)\\nto not crash when viewing the UPGRADE PANEL or SCOREBOARD\\n\\nDO NOT use your CHARACTER LOADOUT KEY as it will always crash!`)"
+				EntFire("bignet", "RunScriptCode", sArg, -1, hPlayer)
+				EntFire("bignet", "RunScriptCode", sArg, 5, hPlayer)
+				EntFire("bignet", "RunScriptCode", sArg, 10, hPlayer)
+				EntFire("bignet", "RunScriptCode", sArg, 15, hPlayer)
+				EntFire("bignet", "RunScriptCode", sArg, 20, hPlayer)
+				EntFire("bignet", "RunScriptCode", sArg, 25, hPlayer)
 			}
-			local sArg = "ClientPrint(activator, HUD_PRINTCENTER, `READ TO AVOID CRASHES BEFORE PLAYING AS MERASMUS\\n\\nUse cl_hud_playerclass_use_playermodel 0 (Player Model in Player Class HUD)\\nto not crash when viewing the UPGRADE PANEL or SCOREBOARD\\n\\nDO NOT use your CHARACTER LOADOUT KEY as it will always crash!`)"
-			EntFire("bignet", "RunScriptCode", sArg, -1, hPlayer)
-			EntFire("bignet", "RunScriptCode", sArg, 5, hPlayer)
-			EntFire("bignet", "RunScriptCode", sArg, 10, hPlayer)
-			EntFire("bignet", "RunScriptCode", sArg, 15, hPlayer)
-			EntFire("bignet", "RunScriptCode", sArg, 20, hPlayer)
-			EntFire("bignet", "RunScriptCode", sArg, 25, hPlayer)
+			else if(!(hPlayer in ActivePlayers) && !IsAliveExtra(hPlayer))
+				EntFire("bignet", "RunScriptCode", "activator.ForceRespawn()", -1, hPlayer)
 		}
-		// TrespasserSeenMerasmusWarning.clear()
+		// TrespasserSeenMerasmusWarning.clear() // debug
 	}
 
 	function RemoveCondReprogrammed(hPlayer)
 	{
+		if(!hPlayer || !hPlayer.IsValid()) return
 		SetPropBool(hPlayer, "m_bIsCoaching", true)
 		hPlayer.RemoveCond(TF_COND_REPROGRAMMED)
 		SetPropBool(hPlayer, "m_bIsCoaching", false)
 	}
 
+	function DisableSentries(bool)
+	{
+		if(!bool) for(local hSentry; hSentry = FindByClassname(hSentry, "obj_sentrygun");) if(GetPropInt(hSentry, "m_iHighestUpgradeLevel") == 3) hSentry.DispatchSpawn()
+		bDisableSentries = bool
+	}
+
+	function BomberRocket()
+	{
+		local hPlayer = self
+		EntFireByHandle(hPlayer, "$TauntFromItem", "Taunt: Rocket Jockey", 0.25, null, null)
+		local hWeapon = hPlayer.GetActiveWeapon()
+		hWeapon.ValidateScriptScope()
+		local hWeapon_scope = hWeapon.GetScriptScope()
+		hWeapon_scope.vecFakeForward <- hPlayer.GetForwardVector()
+		hWeapon_scope.vecOriginLast  <- hPlayer.GetOrigin()
+		hWeapon_scope.iNoMovement    <- 0
+		hWeapon_scope.Think <- function()
+		{
+			if(hPlayer.InCond(TF_COND_TAUNTING))
+			{
+				local vecTarget = hPlayer.GetAbsVelocity()
+				vecTarget.Norm()
+				vecFakeForward = vecFakeForward + (vecTarget - vecFakeForward) * 0.1
+				hPlayer.SnapEyeAngles(TankExt.VectorToQAngle(vecFakeForward))
+				if(endswith(hPlayer.GetSequenceName(hPlayer.GetSequence()), "deploybomb")) hPlayer.RemoveCond(TF_COND_TAUNTING)
+
+				local vecOrigin = hPlayer.GetOrigin()
+				if((vecOrigin - vecOriginLast).Length() < 1) iNoMovement++
+				else iNoMovement = 0
+				vecOriginLast = vecOrigin
+				if(iNoMovement >= 133)
+				{
+					local vecMins = hPlayer.GetPlayerMins()
+					local vecMaxs = hPlayer.GetPlayerMaxs()
+					vecMins.x *= 1.3
+					vecMins.y *= 1.3
+					vecMaxs.x *= 1.3
+					vecMaxs.y *= 1.3
+					Trespasser.UnstuckEntityIgnorePlayers(hPlayer, vecMins, vecMaxs)
+				}
+			}
+			return -1
+		}
+		AddThinkToEnt(hWeapon, "Think")
+	}
+
+	function ChangeAttributesSafe(hPlayer, sAttribute)
+	{
+		if(!hPlayer.IsBotOfType(TF_BOT_TYPE)) return
+		local vecOrigin = hPlayer.GetOrigin()
+		hPlayer.SetAbsOrigin(Vector(0, 0, 9999))
+		hPlayer.AcceptInput("$ChangeAttributes", sAttribute, null, null)
+		hPlayer.SetAbsOrigin(vecOrigin)
+	}
+
+	function StopAllMusic(bStopBeats = false)
+	{
+		for(local hSound; hSound = FindByClassname(hSound, "ambient_generic");)
+		{
+			local sName = hSound.GetName()
+			local Beats = {
+				"beat_mvm"        : null
+				"beat_saw"        : null
+				"beat_helicopter" : null
+				"beat_sewers_1"   : null
+				"beat_sewers_2"   : null
+			}
+			if(startswith(sName, "music_") || (bStopBeats ? sName in Beats : false))
+				EmitSoundEx({
+					sound_name  = "misc/null.wav"
+					entity      = hSound
+					filter_type = RECIPIENT_FILTER_GLOBAL
+					flags       = SND_STOP | SND_IGNORE_NAME
+				})
+		}
+	}
+
+	function Decoy()
+	{
+		local hPlayer = self
+		local hSapper
+		for(local i = 0; i < 8; i++)
+		{
+			local hWeapon = GetPropEntityArray(hPlayer, "m_hMyWeapons", i)
+			if(hWeapon && hWeapon.GetSlot() == 1)
+				{ hSapper = hWeapon; break }
+		}
+		if(!hSapper) return
+		hSapper.ValidateScriptScope()
+		local hSapper_scope = hSapper.GetScriptScope()
+		if("Cleanup" in hSapper_scope) hSapper_scope.Cleanup()
+
+		local RechargeTime = 15
+		hSapper.AddAttribute("effect bar recharge rate increased", RechargeTime / 15.0, -1)
+
+		hSapper_scope.hProjectile  <- null
+		hSapper_scope.iButtonsLast <- 0
+		hSapper_scope.bReady       <- true
+		hSapper_scope.Think <- function()
+		{
+			local iButtons         = GetPropInt(hPlayer, "m_nButtons")
+			local iButtonsChanged  = iButtonsLast ^ iButtons
+			local iButtonsPressed  = iButtonsChanged & iButtons
+			local iButtonsReleased = iButtonsChanged & (~iButtons)
+			iButtonsLast = iButtons
+
+			local hWeapon = hPlayer.GetActiveWeapon()
+
+			local flTime = Time()
+			if(hWeapon == self && iButtonsPressed & IN_ATTACK && GetPropIntArray(hPlayer, "m_iAmmo", TF_AMMO_GRENADES2) > 0)
+			{
+				SetPropIntArray(hPlayer, "m_iAmmo", 0, TF_AMMO_GRENADES2)
+				SetPropFloat(self, "m_flEffectBarRegenTime", flTime + RechargeTime)
+				bReady = false
+
+				if(hProjectile && hProjectile.IsValid())
+					hProjectile.Kill()
+
+				PrecacheScriptSound("spy_taunt_flip_random_flipExert")
+				EmitSoundOn("spy_taunt_flip_random_flipExert", hPlayer)
+
+				local angEyes = hPlayer.EyeAngles()
+				hProjectile = SpawnEntityFromTable("obj_dispenser", {
+					origin = hPlayer.EyePosition()
+					angles = QAngle(0, angEyes.y, 0)
+					teamnum = 2
+					"$maxlevel" : 1
+					"$cannotbesapped" : 1
+				})
+
+				local Kill = []
+				for(local hChild = hProjectile.FirstMoveChild(); hChild; hChild = hChild.NextMovePeer())
+					Kill.append(hChild)
+				foreach(hEnt in Kill)
+					hEnt.Kill()
+				FindByClassnameNearest("dispenser_touch_trigger", hProjectile.GetOrigin(), 1).Kill()
+
+				SetPropIntArray(hProjectile, "m_nModelIndexOverrides", PrecacheModel("models/props_2fort/miningcrate001.mdl"), 0)
+				hProjectile.SetSize(Vector(-16, -16, 0), Vector(16, 16, 23))
+				hProjectile.KeyValueFromString("rendercolor", "250 230 200")
+				hProjectile.KeyValueFromFloat("modelscale", 0.6)
+
+				SetPropEntity(hProjectile, "m_hBuilder", hPlayer)
+				hProjectile.AcceptInput("Disable", null, null, null)
+				hProjectile.SetOwner(hPlayer)
+				hProjectile.SetMoveType(MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE)
+				hProjectile.SetSolid(SOLID_NONE)
+				hProjectile.SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
+				hProjectile.SetAbsVelocity((angEyes + QAngle(-15)).Forward() * 512)
+				SetPropInt(hProjectile, "m_takedamage", DAMAGE_NO)
+				EntityOutputs.AddOutput(hProjectile, "OnObjectHealthChanged", "!self", "$PlaySound", "Wood.ImpactHard", -1, -1)
+				hProjectile.AcceptInput("SetHealth", "350", null, null)
+
+				local iSapperPower = self.GetAttribute("robo sapper", 0)
+
+				hProjectile.ValidateScriptScope()
+				local hProjectile_scope = hProjectile.GetScriptScope()
+				hProjectile_scope.flTimeUnbox <- flTime + 2
+				hProjectile_scope.flTimeBreak <- flTime + 8 + 1 * iSapperPower
+				hProjectile_scope.flTimeSlow  <- 0
+				hProjectile_scope.bActive     <- false
+				hProjectile_scope.Think <- function()
+				{
+					if(!self.IsValid()) return
+					local flTime = Time()
+					local vecOrigin = self.GetOrigin()
+					if(flTime >= flTimeUnbox && !bActive)
+					{
+						bActive = true
+						local vecMins = Vector(-8, -8, 0)
+						local vecMaxs = Vector(8, 8, 83)
+						SetPropIntArray(self, "m_nModelIndexOverrides", PrecacheModel("models/props_training/target_spy.mdl"), 0)
+						self.SetSize(vecMins, vecMaxs)
+						self.SetModelScale(1, 0)
+						self.SetOwner(null)
+						self.SetSolid(SOLID_BBOX)
+						self.SetCollisionGroup(TFCOLLISION_GROUP_OBJECT)
+						SetPropInt(self, "m_takedamage", DAMAGE_YES)
+						SetPropInt(self, "m_iObjectType", OBJ_LAST)
+						self.AcceptInput("$PlaySound", "Wood.Break", null, null)
+						DispatchParticleEffect("target_break_initial_dust", vecOrigin, self.GetForwardVector())
+
+						for(local i = 1; i <= MAX_CLIENTS; i++)
+						{
+							local hPlayer = PlayerInstanceFromIndex(i)
+							if(hPlayer && hPlayer.IsAlive() && Trespasser.IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, hPlayer.GetOrigin(), hPlayer.GetPlayerMins(), hPlayer.GetPlayerMaxs()))
+								Trespasser.UnstuckEntityIgnorePlayers(hPlayer)
+						}
+					}
+
+					if(bActive && flTime >= flTimeSlow)
+					{
+						flTimeSlow = flTime + 0.5
+						SetPropString(self, "m_iName", "decoytarget")
+						local flRange = 96 + 22 * iSapperPower
+						for(local hPlayer; hPlayer = FindByClassnameWithin(hPlayer, "player", vecOrigin, flRange);)
+							if(hPlayer.IsAlive() && hPlayer.IsBotOfType(TF_BOT_TYPE) && hPlayer.GetTeam() != TF_TEAM_RED && !hPlayer.HasBotTag("bot_ignoredecoy"))
+								hPlayer.AcceptInput("$BotCommand", "interrupt_action -posent decoytarget -lookposent decoytarget -killlook -alwayslook -duration 0.5", null, null)
+					}
+
+					if(flTime >= flTimeBreak) self.Kill()
+					return -1
+				}
+				AddThinkToEnt(hProjectile, "Think")
+				Trespasser.SetDestroyCallback(hProjectile, function()
+				{
+					local vecOrigin = self.GetOrigin()
+					self.AcceptInput("$PlaySound", "Breakable.MatWood", null, null)
+					DispatchParticleEffect("target_break", vecOrigin, self.GetForwardVector())
+					local Kill = []
+					for(local hGib; hGib = FindByClassnameWithin(hGib, "tf_ammo_pack", vecOrigin, 4);)
+						Kill.append(hGib)
+					foreach(hGib in Kill)
+						hGib.Kill()
+				})
+			}
+
+			if(!bReady && flTime >= GetPropFloat(self, "m_flEffectBarRegenTime"))
+				hPlayer.AcceptInput("$PlaySoundToSelf", "TFPlayer.ReCharged", null, null), bReady = true
+
+			return -1
+		}
+		AddThinkToEnt(hSapper, "Think")
+		hSapper_scope.Cleanup <- function()
+		{
+			if(hProjectile && hProjectile.IsValid())
+				hProjectile.Kill()
+		}
+		Trespasser.SetDestroyCallback(hSapper, hSapper_scope.Cleanup)
+	}
+
 	// a think ent for per tick checks
-	hThinkEnt = SpawnEntityFromTable("logic_relay", {})
-	flTimeNext_Slow = 0
-	flTimeCountdown = -1
-
-	bBlockerStairs = false
-	bBlockerCade = false
-	bBlockerTable = true
-
-	hITLast = null
-	bMalletHHH = false
-
-	BruteHealTable = {}
+	hThinkEnt          = SpawnEntityFromTable("logic_relay", {})
+	BruteHealTable     = {}
+	PullDownTable      = {}
 	SlowedPlayersArray = []
-
-	bNoSmallSkeletons = false
-
-	PullDownTable = {}
-
-	bDisableSentries = false
+	hITLast            = null
+	flTimeCountdown    = -1
+	flTimeNext_Slow    = 0
+	bBlockerCade       = false
+	bBlockerStairs     = false
+	bBlockerTable      = true
+	bDisableSentries   = false
+	bMalletHHH         = false
+	bNoSmallSkeletons  = false
 
 	function ThinkEntThink()
 	{
@@ -3689,6 +4049,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			{
 				flTimeCountdown = -1, ClientPrint(null, HUD_PRINTCENTER, "")
 				ForceRespawnDeadRed()
+				bInBreak = false
 			}
 			else ClientPrint(null, HUD_PRINTCENTER, format("%i", ceil(flTimeCountdown - flTime)))
 		}
@@ -3701,31 +4062,31 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			local hPlayer = PlayerInstanceFromIndex(i)
 			if(!hPlayer) continue
 
-			local iTeamNum = hPlayer.GetTeam()
-			local bBot = hPlayer.IsBotOfType(TF_BOT_TYPE)
+			local iTeamNum    = hPlayer.GetTeam()
+			local bBot        = hPlayer.IsBotOfType(TF_BOT_TYPE)
 			local bFakeClient = hPlayer.IsFakeClient()
-			local bAlive = hPlayer.IsAlive()
+			local bAlive      = IsAliveExtra(hPlayer)
 
 			if(iTeamNum == TF_TEAM_RED) // reds
 			{
 				if(bAlive) // alive
 				{
 					// dirt slow
-					if(!bSoloMode && !hPlayer.InCond(TF_COND_HALLOWEEN_GHOST_MODE))
+					if(!bSoloMode)
 					{
 						local vecOrigin = hPlayer.GetOrigin()
-						local vecMins = hPlayer.GetPlayerMins()
-						local vecMaxs = hPlayer.GetPlayerMaxs()
-						local bStun = false
+						local vecMins   = hPlayer.GetPlayerMins()
+						local vecMaxs   = hPlayer.GetPlayerMaxs()
+						local bStun     = false
 						if(!IntersectionBoxBox(vecOrigin, vecMins, vecMaxs, Vector(0, 1092, 288), Vector(-696, -828, -352), Vector(696, 828, 352)))
 						{
 							local Trace = {
-								start = vecOrigin
-								end = vecOrigin + Vector(0, 0, -128)
+								start   = vecOrigin
+								end     = vecOrigin + Vector(0, 0, -128)
 								hullmin = vecMins
 								hullmax = Vector(vecMaxs.x, vecMaxs.y, vecMins.z)
-								mask = MASK_PLAYERSOLID
-								ignore = hPlayer
+								mask    = MASK_PLAYERSOLID
+								ignore  = hPlayer
 							}
 							TraceHull(Trace)
 							if(Trace.surface_props == 9 && Trace.enthit.entindex() == 0)
@@ -3768,8 +4129,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 						{
 							if(!bPrimary)
 								hPlayer.AddCondEx(!bMiniCrit ? TF_COND_CRITBOOSTED_USER_BUFF : TF_COND_OFFENSEBUFF, 0.2, null)
-							// hPlayer.AddCustomAttribute("no_jump", 1, 0.2)
-							// hPlayer.AddCustomAttribute("no_duck", 1, 0.2)
 						}
 						else if(bSoloMode)
 						{
@@ -3786,7 +4145,7 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				}
 				else // dead
 				{
-					if(bSoloMode && hPlayer != hLastRed)
+					if((bSoloMode || bAboutToBeSoloMode) && hPlayer != hLastRed)
 					{
 						hPlayer.ForceChangeTeam(TEAM_SPECTATOR, true)
 						ClientPrint(hPlayer, HUD_PRINTCENTER, "Singleplayer Mode in progress...\n              Please wait...")
@@ -3802,13 +4161,6 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				if(bSoloMode && hPlayer.GetCustomAttribute("force distribute currency on death", 0) == 0)
 					hPlayer.AddCustomAttribute("force distribute currency on death", 1, -1)
 			}
-		}
-
-		if(!bGameOver && (bLastMan || bSoloMode || bAboutToBeSoloMode) && hLastRed && hLastRed.IsValid() && (hLastRed.InCond(TF_COND_REPROGRAMMED) || !hLastRed.IsAlive()))
-		{
-			hLastRed = null
-			EntFire("bots_win", "RoundWin")
-			EntFire("transform_relay", "CancelPending")
 		}
 
 		// dont allow players to build through prop_dynamics
@@ -3841,8 +4193,8 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				local vecOrigin = hCash.GetOrigin()
 				local Trace = {
 					start = vecOrigin
-					end = vecOrigin + Vector(0, 0, 24)
-					mask = MASK_PLAYERSOLID
+					end   = vecOrigin + Vector(0, 0, 24)
+					mask  = MASK_PLAYERSOLID
 				}
 				TraceLineEx(Trace)
 				if("enthit" in Trace && Trace.enthit.GetClassname() == "prop_dynamic")
@@ -3938,9 +4290,9 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 			if(hBrute && hBrute.IsValid() && hBrute.IsAlive() && iHealAmount > 0)
 			{
 				if(!hBrute.InCond(TF_COND_RADIUSHEAL)) hBrute.AddCond(TF_COND_RADIUSHEAL)
-				local iHealBy = 1
+				local iHealBy    = 1
 				local iMaxHealth = hBrute.GetMaxHealth()
-				local iHealth = hBrute.GetHealth()
+				local iHealth    = hBrute.GetHealth()
 				if(iHealth < iMaxHealth)
 					hBrute.SetHealth(iHealth + iHealBy > iMaxHealth ? iMaxHealth : iHealth + iHealBy)
 				BruteHealTable[hBrute] = iHealAmount - iHealBy
@@ -3965,9 +4317,9 @@ if(hObjectiveResource && hObjectiveResource.IsValid()) hObjectiveResource.Accept
 				if(hPlayer.GetMoveType() != MOVETYPE_NONE)
 				{
 					local Trace = {
-						start = vecOrigin
-						end = vecOrigin + Vector(0, 0, -256)
-						mask = MASK_PLAYERSOLID
+						start  = vecOrigin
+						end    = vecOrigin + Vector(0, 0, -256)
+						mask   = MASK_PLAYERSOLID
 						ignore = hPlayer
 					}
 					TraceLineEx(Trace)
