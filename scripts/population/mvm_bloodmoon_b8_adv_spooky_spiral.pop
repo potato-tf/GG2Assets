@@ -322,7 +322,7 @@ population
 					{
 						Target player
 						Action $SetProp$m_iszClassIcon
-						Param 	pyro_hyper
+						Param 	pyro_hyper_lite
 						Delay 0
 						Cooldown 0
 						Repeats 1
@@ -2096,6 +2096,11 @@ population
 			{
 				Template	T_TFBot_Pyro
 				ClassIcon	heavy_ignite
+			}
+			TFBot
+			{
+				Template	T_TFBot_Pyro
+				ClassIcon	pyro_hyper_lite
 			}
 			}
 		}
