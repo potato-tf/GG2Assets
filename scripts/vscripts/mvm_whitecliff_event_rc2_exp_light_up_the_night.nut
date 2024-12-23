@@ -629,8 +629,8 @@ PrecacheSound("mvm/sentrybuster/mvm_sentrybuster_loop.wav")
 __CollectGameEventCallbacks(LightUpTheNight)
 
 StyleSystem.SetParams({
-	PRank = 20000
-	SRank = 17600
+	PRank = 19000
+	SRank = 16500
 	ARank = 8800
 	BRank = 4400
 	CRank = 2200
