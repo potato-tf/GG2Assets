@@ -278,10 +278,9 @@ athazar's_bar_and_bazaar	// subtle sneed's seed and feed reference
 		Name	"The Solar Carbonizer"
 		OriginalItemName	"The Phlogistinator"
 		//"custom item model"	"models/weapons/c_models/c_solar_carbonizer/c_solar_carbonizer.mdl"
-		"damage penalty"	0.85
 		"rage receive scale"		1.2
 		
-		"special item description"		"Alternative Phlog; MMMPH is replaced with triple banner effect that charges 20% faster at the cost of -15% damage"
+		"special item description"		"Alternative Phlog; MMMPH is replaced with triple banner effect that charges 20% faster"
 		"effect cond override"	1056026
 		
 		//"spread offset pattern"		"10 -15 100"	// oh custom flamethrower models, why do you have to be like this
@@ -295,18 +294,17 @@ athazar's_bar_and_bazaar	// subtle sneed's seed and feed reference
 		OriginalItemName	"TF_WEAPON_SHOTGUN_PYRO"
 		"custom item model"	"models/weapons/c_models/c_calefactor/c_calefactor.mdl"
 
-		"special item description"		"Lowered damage per shot, but crits burning targets"
-		"special item description 2"	"ALT FIRE: Shoot an arcing fireball projectile with a cooldown"
+		"special item description"		"Lowered damage per shot, but crits burning targets. 7 seconds of minicrits on kill"
+		"special item description 2"	"ALT FIRE: Shoot an arcing fireball projectile with a cooldown. Can ignite enemy Pyros"
 		
 		"clip size penalty"	0.64
-		"damage penalty"	0.8
-		"fire rate penalty"	1.2
+		"damage penalty"	0.85
 		"crit vs burning players"	1
 		"minicritboost on kill"		7
 		"special damage type"		1	// used exclusively for mvm_whitecliff_event_rc2_exp_light_up_the_night.pop's normal mode final boss
 		
 		"alt fire attack" 3
-		"alt fire attributes" "override projectile type|2|Set DamageType Ignite|1|projectile trail particle|spell_fireball_small_red|fire rate penalty|3|projectile gravity|600|custom projectile model|models/empty.mdl|damage bonus|5|projectile speed increased|2|self dmg push force increased|2|blast dmg to self increased|1.5|blast radius increased|1.5"
+		"alt fire attributes" "override projectile type|2|Set DamageType Ignite|1|projectile trail particle|spell_fireball_small_red|fire rate penalty|3|projectile gravity|600|custom projectile model|models/empty.mdl|damage bonus|5|projectile speed increased|2|self dmg push force increased|2|blast dmg to self increased|1.5|blast radius increased|1.5|add cond on hit|123|add cond on hit duration|1"
 
 	}
 
@@ -602,6 +600,7 @@ athazar's_bar_and_bazaar	// subtle sneed's seed and feed reference
 		"blast radius decreased"	0.7
 		"fire rate penalty"			1.2
 		"add attributes when active"	"cannot taunt|1"	// prevents demoman taunt as medic
+		"penetrate teammates"		1
 	}
 	// Dev Notes: New! An interesting concept that came to mind after a certain someone joked about "medic but he shoots pills."
 	// So, as the custom description goes- Let's give him pills. No, seriously. ACTUAL PILLS.
@@ -1468,10 +1467,10 @@ for(local i = 0; i <= 8; i++)
 
 		howitzer_damagebonus
 		{
-			Name			"+20% Damage Bonus"
+			Name			"+25% Damage Bonus"
 			Attribute		"CARD: damage bonus"
-			Cap				1.8
-			Increment		0.2
+			Cap				2
+			Increment		0.25
 			Cost			400
 			AllowedWeapons
 			{
