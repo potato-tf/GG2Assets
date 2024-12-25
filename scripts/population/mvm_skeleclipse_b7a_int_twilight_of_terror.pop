@@ -991,6 +991,7 @@ population
 			TFBot
 			{
 				Template	T_TFBot_Giant_Scout_Baseball
+				Health		1200
 				Tag nav_prefer_flank_left
 			}
 		}
